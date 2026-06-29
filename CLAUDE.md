@@ -8,7 +8,7 @@ workspace root `../CLAUDE.md`. This repo is **greenfield**.
 The **backoffice web app** — the **management & money** surface used by the owner/admins. This is
 **Phase 2**, whose goal is to **fully retire "Alis To Soft"**. Audience: **internal admins/owner**.
 
-Features (per [req2.md](../smart-scheduler-front/req2.md) §3.2 & §4):
+Features (per [docs/requirement-timeline.md](docs/requirement-timeline.md), latest entry §3–§5):
 - **Student wallet / hour deduction** — remaining-hours ledger; on real attendance (recorded by the
   frontoffice) deduct hours, then push **LINE** to the **parent**.
 - **Inventory** — snacks / water / equipment stock; add stock, auto-deduct on sale.
