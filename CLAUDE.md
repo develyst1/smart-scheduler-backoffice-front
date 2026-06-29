@@ -5,8 +5,9 @@ workspace root `../CLAUDE.md`. This repo is **greenfield**.
 
 ## What this is
 
-The **backoffice web app** — the **management & money** surface used by the owner/admins. This is
-**Phase 2**, whose goal is to **fully retire "Alis To Soft"**. Audience: **internal admins/owner**.
+The **backoffice web app** — the **management & money** surface used by the owner/admins. Part of
+**Option C (Ultimate)** — inventory Mini ERP/POS plus wallet/payroll to **fully retire "Alis To Soft"**.
+Build wave 2 (greenfield). Audience: **internal admins/owner**.
 
 Features (per [docs/requirement-timeline.md](docs/requirement-timeline.md), latest entry §3–§5):
 - **Student wallet / hour deduction** — remaining-hours ledger; on real attendance (recorded by the
