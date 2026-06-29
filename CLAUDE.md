@@ -9,7 +9,7 @@ The **backoffice web app** — the **management & money** surface used by the ow
 **Option C (Ultimate)** — inventory Mini ERP/POS plus wallet/payroll to **fully retire "Alis To Soft"**.
 Build wave 2 (greenfield). Audience: **internal admins/owner**.
 
-Features (per [docs/requirement-timeline.md](docs/requirement-timeline.md), latest entry §3–§5):
+Features (see [docs/requirement.md](docs/requirement.md)):
 - **Student wallet / hour deduction** — remaining-hours ledger; on real attendance (recorded by the
   frontoffice) deduct hours, then push **LINE** to the **parent**.
 - **Inventory** — snacks / water / equipment stock; add stock, auto-deduct on sale.
@@ -45,6 +45,10 @@ Same layering — `page → partial → hook → service → API`, pure domain l
 - `src/components/layout/*`, `src/components/common/*`, `src/context/*` (Mantine + Query providers)
 
 Conventions: thin pages, restrained color, Thai UI copy, toasts via `notify()`.
+
+**Theme:** dark **gray-black** (Mantine `gray.8`/`gray.9`) — not pure black. See [docs/requirement.md](docs/requirement.md) §3.
+
+Repo tasks: **[todo.md](todo.md)**
 
 ## Talks to: `smart-scheduler-backoffice-back` (Finance API)
 
