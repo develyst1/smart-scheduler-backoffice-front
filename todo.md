@@ -1,9 +1,10 @@
 # TODO — smart-scheduler-backoffice-front
 
-งาน implement ตาม [docs/requirement.md](docs/requirement.md) · consumer ของ **`smart-scheduler-backoffice-back`**
+งาน implement ตาม [docs/requirement-timeline.md](docs/requirement-timeline.md) · สัญญา **Option C** · consumer ของ **`smart-scheduler-backoffice-back`**
 
-> สถานะ: ✅ เสร็จ · 🟡 บางส่วน · ❌ ยังไม่มี  
-> **[FE]** repo นี้ · **[BE]** ต้องมี API จาก backoffice-back ก่อน
+> สถานะ: ✅ เสร็จ · 🟡 บางส่วน · ❌ ยังไม่มี · อัปเดต 2026-06-30
+> **🔴 ยังไม่เริ่ม — `src/` ว่างเปล่า** (greenfield) · เริ่มที่ Wave 0
+> **[FE]** repo นี้ · **[BE]** ต้องมี API จาก backoffice-back ก่อน (ส่วนใหญ่ของ API พร้อมแล้ว — ดู todo ฝั่งนั้น)
 
 ---
 
