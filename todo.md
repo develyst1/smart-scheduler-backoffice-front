@@ -42,7 +42,9 @@
 
 ## Wave 3 — Teachers & payroll
 
-- [ ] ❌ **[FE] ตั้งเรทครู** — hourly rate, income limit (Freelance)
+> กฎ payroll จากลูกค้า (2026-06-30): [docs/teacher-roster-payroll.md](docs/teacher-roster-payroll.md)
+
+- [ ] ❌ **[FE] ตั้งเรทครู** — hourly rate, base salary (FT), income limit (Freelance)
 - [ ] ❌ **[FE] สรุปรายได้ครูรายเดือน** — chart/table
 - [ ] ❌ **[FE] Payroll run** — สร้าง draft · แก้ commission/ค่ารถ · finalize · ดู PDF/print (optional)
 
