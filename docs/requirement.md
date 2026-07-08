@@ -149,4 +149,4 @@ Flow ที่ user ต้องการ:
 
 - Backoffice API spec: [../../smart-scheduler-backoffice-back/docs/requirement.md](../../smart-scheduler-backoffice-back/docs/requirement.md)
 - Pattern อ้างอิง: [../../smart-scheduler-front/CLAUDE.md](../../smart-scheduler-front/CLAUDE.md)
-- [todo.md](../todo.md) · [CLAUDE.md](../CLAUDE.md)
+- งาน/สโคป: repo `smart-scheduler-requirement` (requirement.html) · [CLAUDE.md](../CLAUDE.md)
