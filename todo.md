@@ -2,21 +2,22 @@
 
 งาน implement ตาม [docs/requirement-timeline.md](docs/requirement-timeline.md) · สัญญา **Option C** · consumer ของ **`smart-scheduler-backoffice-back`**
 
-> สถานะ: ✅ เสร็จ · 🟡 บางส่วน · ❌ ยังไม่มี · อัปเดต 2026-06-30
-> **🔴 ยังไม่เริ่ม — `src/` ว่างเปล่า** (greenfield) · เริ่มที่ Wave 0
+> สถานะ: ✅ เสร็จ · 🟡 บางส่วน · ❌ ยังไม่มี · อัปเดต 2026-07-08
+> **🟢 Wave 0 เสร็จ — scaffold รันได้ (`bun run build` ผ่าน, 8 route prerender)** · ถัดไป Wave 1 Inventory
 > **[FE]** repo นี้ · **[BE]** ต้องมี API จาก backoffice-back ก่อน (ส่วนใหญ่ของ API พร้อมแล้ว — ดู todo ฝั่งนั้น)
 
 ---
 
-## Wave 0 — Scaffold & theme
+## Wave 0 — Scaffold & theme ✅
 
-- [ ] ❌ **[FE] Init Next 16** — copy pattern จาก `smart-scheduler-front` (App Router, bun, tsconfig `@/*`)
-- [ ] ❌ **[FE] Mantine v9 + Tailwind v3** — providers ใน `src/context/`
-- [ ] ❌ **[FE] Dark theme เทา-ดำ** — `colorScheme: 'dark'`, bg `gray.9`, surface `gray.8`, ไม่ pure black
-- [ ] ❌ **[FE] `src/lib/ui/colors.ts` + `notify.ts`** — semantic colors แยกจาก frontoffice (โทนเย็น/เทา)
-- [ ] ❌ **[FE] Admin layout** — sidebar nav: Dashboard, สต๊อก, Wallet, ครู/Payroll, รายงาน
-- [ ] ❌ **[FE] Axios client** — `NEXT_PUBLIC_BACKOFFICE_API_URL` · error → toast
-- [ ] ❌ **[FE] TanStack Query provider + query key conventions**
+- [x] ✅ **[FE] Init Next 16** — copy pattern จาก `smart-scheduler-front` (App Router, bun, tsconfig `@/*`)
+- [x] ✅ **[FE] Mantine v9 + Tailwind v3** — providers ใน `src/context/` (`AppProviders` + `QueryProvider`)
+- [x] ✅ **[FE] Dark theme เทา-ดำ** — `defaultColorScheme: 'dark'`, bg `#0d0e10`, surface `content1`, green primary
+- [x] ✅ **[FE] `src/lib/ui/colors.ts` + `notify.ts`** — semantic colors (primary → green)
+- [x] ✅ **[FE] Admin layout** — sidebar nav: แดชบอร์ด, สต๊อก, Wallet, ครู/Payroll, รายงาน + placeholder ทุกหน้า
+- [x] ✅ **[FE] Axios client** — `NEXT_PUBLIC_BACKOFFICE_API_URL` (default :3002) + `ApiClientError`
+- [x] ✅ **[FE] TanStack Query provider**
+- [ ] 🟡 **[FE] Auth** — ยังไม่ทำ (Wave 0 ไม่มี login) · Header/Header.tsx + client.ts มี TODO ไว้
 
 ---
 
