@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backoffice-front",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "next", "dev", "-p", "3100"],
+      "port": 3100
+    }
+  ]
+}

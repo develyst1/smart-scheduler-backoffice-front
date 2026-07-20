@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Thai } from "next/font/google";
+import { Noto_Sans_Thai, IBM_Plex_Mono } from "next/font/google";
 import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
@@ -14,6 +14,15 @@ const notoSansThai = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
 });
 
+// Monospaced figures give the money read like a ledger/terminal — a deliberate
+// finance-cockpit character, used for every amount via the `.font-num` utility.
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  variable: "--font-plex-mono",
+});
+
 export const metadata: Metadata = {
   title: "Smart Backoffice",
   description: "ระบบหลังบ้าน — สต๊อก, Wallet, Payroll และรายงาน",
@@ -25,7 +34,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="th" {...mantineHtmlProps} className={notoSansThai.variable}>
+    <html lang="th" {...mantineHtmlProps} className={`${notoSansThai.variable} ${plexMono.variable}`}>
       <head>
         <ColorSchemeScript defaultColorScheme="dark" />
       </head>

@@ -37,6 +37,33 @@ body {
   color: #e6e8ec;
 }
 
+/* Staggered entrance for cards/rows */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Monospaced, tabular figures for money/quantities — the ledger look. */
+.font-num {
+  font-family: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Subtle grid texture behind the app — depth without noise (finance-cockpit). */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
 /* Thin, modern scrollbars for the tables/lists */
 * {
   scrollbar-width: thin;

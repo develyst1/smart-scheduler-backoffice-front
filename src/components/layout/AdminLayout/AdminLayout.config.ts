@@ -1,4 +1,4 @@
-import { LayoutDashboard, Boxes, Wallet, Banknote, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Boxes } from "lucide-react";
 
 export interface NavItem {
   key: string;
@@ -7,14 +7,11 @@ export interface NavItem {
   icon: typeof LayoutDashboard;
 }
 
-// Backoffice nav (todo.md Wave 0). Routes exist as thin placeholders until each
-// wave is built: Wave 1 inventory → 2 wallet → 3 payroll → 4 reports.
+// Item-centric backoffice: a P&L dashboard + one catalog of typed items (product /
+// service × income / expense / fixed-cost). Wallet/payroll are set aside for now.
 export const NAV_ITEMS: NavItem[] = [
-  { key: "dashboard", label: "แดชบอร์ด", href: "/dashboard", icon: LayoutDashboard },
-  { key: "inventory", label: "สต๊อกสินค้า", href: "/inventory", icon: Boxes },
-  { key: "wallet", label: "Wallet นักเรียน", href: "/wallet", icon: Wallet },
-  { key: "payroll", label: "ครู / Payroll", href: "/payroll", icon: Banknote },
-  { key: "reports", label: "รายงาน", href: "/reports", icon: BarChart3 },
+  { key: "dashboard", label: "งบกำไร–ขาดทุน", href: "/dashboard", icon: LayoutDashboard },
+  { key: "items", label: "รายการ (Items)", href: "/items", icon: Boxes },
 ];
 
 export const APP_NAME = "Smart Backoffice";
