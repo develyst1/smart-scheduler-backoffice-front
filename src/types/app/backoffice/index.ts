@@ -21,6 +21,9 @@ export interface CatalogItem {
   externalRef: string | null;
   externalSource: string | null;
   quantityOnHand: number;
+  /** Well-known keys per consumer. Freelance-budget items carry
+   *  { kind:'FREELANCE_BUDGET', monthlyBudgetMinor } (SPEC-001). */
+  metadata: Record<string, unknown> | null;
   active: boolean;
 }
 
