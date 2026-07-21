@@ -1,9 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { ActionIcon } from "@mantine/core";
-import { Menu, PanelLeft, PanelLeftClose } from "lucide-react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { ActionIcon, Tooltip } from "@mantine/core";
+import { LogOut, Menu, PanelLeft, PanelLeftClose } from "lucide-react";
 import { NAV_ITEMS, APP_NAME } from "../AdminLayout.config";
+import { clearToken, getUser } from "@/lib/auth";
 
 interface Props {
   collapsed: boolean;
@@ -13,10 +15,19 @@ interface Props {
 
 export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const current = NAV_ITEMS.find((i) => pathname?.startsWith(i.href));
 
-  // TODO (auth wave): replace with the signed-in admin from the session.
-  const name = "แอดมิน";
+  // Read after mount so SSR (no cookie) and client render agree.
+  const [name, setName] = useState("แอดมิน");
+  useEffect(() => {
+    setName(getUser() ?? "แอดมิน");
+  }, []);
+
+  const logout = () => {
+    clearToken();
+    router.replace("/login");
+  };
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-default-200 bg-content1/80 px-4 backdrop-blur sm:px-6">
@@ -53,6 +64,11 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-green-800 text-xs font-semibold text-primary-foreground ring-2 ring-primary/20">
           AD
         </span>
+        <Tooltip label="ออกจากระบบ">
+          <ActionIcon variant="subtle" color="gray" size="lg" onClick={logout} aria-label="ออกจากระบบ">
+            <LogOut size={18} />
+          </ActionIcon>
+        </Tooltip>
       </div>
     </header>
   );
