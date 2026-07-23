@@ -1,4 +1,4 @@
-import { LayoutDashboard, Boxes, Wallet, Banknote } from "lucide-react";
+import { LayoutDashboard, Boxes, Tags } from "lucide-react";
 
 export interface NavItem {
   key: string;
@@ -7,13 +7,13 @@ export interface NavItem {
   icon: typeof LayoutDashboard;
 }
 
-// Item-centric backoffice: a P&L dashboard + one catalog of typed items (product /
-// service × income / expense / fixed-cost). Wallet/payroll are set aside for now.
+// Rebuilt backoffice (REQ-006): a P&L dashboard + one universal Items catalog (direction ×
+// cadence, ceiling/remaining) + tags. The old ops screens (Freelance Budgets / FT-PT Salary)
+// are retired — everything is now an item.
 export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", label: "งบกำไร–ขาดทุน", href: "/dashboard", icon: LayoutDashboard },
   { key: "items", label: "รายการ (Items)", href: "/items", icon: Boxes },
-  { key: "freelance-budgets", label: "งบครูฟรีแลนซ์", href: "/freelance-budgets", icon: Wallet },
-  { key: "ftpt-salary", label: "เงินเดือนประจำ/พาร์ทไทม์", href: "/ftpt-salary", icon: Banknote },
+  { key: "tags", label: "แท็ก", href: "/tags", icon: Tags },
 ];
 
 export const APP_NAME = "Smart Backoffice";

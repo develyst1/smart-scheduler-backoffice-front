@@ -22,6 +22,7 @@ export const config = {
     "/freelance-budgets/:path*",
     "/ftpt-salary/:path*",
     "/items/:path*",
+    "/tags/:path*",
     "/inventory/:path*",
     "/reports/:path*",
     "/wallet/:path*",

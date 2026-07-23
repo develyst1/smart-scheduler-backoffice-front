@@ -1,5 +1,5 @@
-import ItemsContent from "@/components/partials/Items/ItemsContent";
+import BoItemsContent from "@/components/partials/BoItems/BoItemsContent";
 
 export default function ItemsPage() {
-  return <ItemsContent />;
+  return <BoItemsContent />;
 }
