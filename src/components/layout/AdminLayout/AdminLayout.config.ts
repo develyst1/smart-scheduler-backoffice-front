@@ -1,4 +1,4 @@
-import { LayoutDashboard, Boxes, Tags } from "lucide-react";
+import { LayoutDashboard, Boxes, Tags, PieChart } from "lucide-react";
 
 export interface NavItem {
   key: string;
@@ -12,6 +12,7 @@ export interface NavItem {
 // are retired — everything is now an item.
 export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", label: "งบกำไร–ขาดทุน", href: "/dashboard", icon: LayoutDashboard },
+  { key: "revenue", label: "รายได้แยกตามกิจกรรม", href: "/revenue", icon: PieChart },
   { key: "items", label: "รายการ (Items)", href: "/items", icon: Boxes },
   { key: "tags", label: "แท็ก", href: "/tags", icon: Tags },
 ];

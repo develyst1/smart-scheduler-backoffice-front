@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as svc from "@/services/bo.service";
 import type { ListItemsParams } from "@/services/bo.service";
 
@@ -74,5 +74,21 @@ export function useCreateTagValue() {
   return useMutation({
     mutationFn: svc.createTagValue,
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY.tags }),
+  });
+}
+
+// ── Revenue reports (SPEC-021 / TASK-065) ──
+export function useRevenueByActivity(month: string) {
+  return useQuery({
+    queryKey: ["bo", "revenue-by-activity", month] as const,
+    queryFn: () => svc.getRevenueByActivity(month),
+  });
+}
+
+export function useCustomerSpend(month: string, q?: string) {
+  return useQuery({
+    queryKey: ["bo", "customer-spend", month, q ?? ""] as const,
+    queryFn: () => svc.getCustomerSpend(month, q),
+    placeholderData: keepPreviousData,
   });
 }

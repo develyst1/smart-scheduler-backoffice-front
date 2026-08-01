@@ -6,7 +6,9 @@ import type {
   BoMovement,
   BoPLReport,
   Cadence,
+  CustomerSpendReport,
   Direction,
+  RevenueByActivity,
   TagGroup,
   TagValue,
 } from "@/types/app/bo";
@@ -99,4 +101,19 @@ export async function createTagValue(input: {
 
 export async function setItemTags(itemId: string, tagValueIds: string[]): Promise<void> {
   await api.put(`/v1/bo/items/${itemId}/tags`, { tagValueIds });
+}
+
+// ── Revenue reports (SPEC-021 / TASK-065). Read-only. ──
+export async function getRevenueByActivity(month: string): Promise<RevenueByActivity> {
+  const { data } = await api.get<RevenueByActivity>("/v1/bo/reports/revenue-by-activity", {
+    params: { month },
+  });
+  return data;
+}
+
+export async function getCustomerSpend(month: string, q?: string): Promise<CustomerSpendReport> {
+  const { data } = await api.get<CustomerSpendReport>("/v1/bo/reports/customer-spend", {
+    params: { month, q: q || undefined },
+  });
+  return data;
 }
