@@ -49,8 +49,8 @@ Conventions: thin pages, restrained color, Thai UI copy, toasts via `notify()`.
 **Theme:** dark **gray-black** (Mantine `gray.8`/`gray.9`) — not pure black. See [docs/requirement.md](docs/requirement.md) §3.
 
 **Tasks/scope live in the `smart-scheduler-requirement` repo, not a `todo.md`** (todo files were
-removed 2026-07-08 — do not recreate them). Open `smart-scheduler-requirement/requirement.html` and
-treat `Partial` / `Planned` items as the work queue. See the root `../CLAUDE.md` §"How work is
+removed 2026-07-08 — do not recreate them). Scope: `smart-scheduler-requirement/01-master-plan/` +
+`02-requirements/` (the July `requirement.html` is archived in `_archive/2026-07-hub/`). See the root `../CLAUDE.md` §"How work is
 assigned" for the full policy.
 
 ## Talks to: `smart-scheduler-backoffice-back` (Finance API)
