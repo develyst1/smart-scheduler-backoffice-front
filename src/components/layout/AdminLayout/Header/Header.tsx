@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ActionIcon, Tooltip } from "@mantine/core";
+import { ActionIcon, Badge, Tooltip } from "@mantine/core";
 import { LogOut, Menu, PanelLeft, PanelLeftClose } from "lucide-react";
-import { NAV_ITEMS, APP_NAME } from "../AdminLayout.config";
-import { clearToken, getUser } from "@/lib/auth";
+import { APP_NAME } from "../AdminLayout.config";
+import { clearToken } from "@/lib/auth";
+import { useSession } from "@/context/RoleContext";
+import { ruleFor } from "@/lib/roles/pages";
+import { ROLE_LABEL } from "@/types/app/roles";
 
 interface Props {
   collapsed: boolean;
@@ -16,13 +18,8 @@ interface Props {
 export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const current = NAV_ITEMS.find((i) => pathname?.startsWith(i.href));
-
-  // Read after mount so SSR (no cookie) and client render agree.
-  const [name, setName] = useState("แอดมิน");
-  useEffect(() => {
-    setName(getUser() ?? "แอดมิน");
-  }, []);
+  const current = ruleFor(pathname);
+  const { user } = useSession();
 
   const logout = () => {
     clearToken();
@@ -60,10 +57,12 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
       </div>
 
       <div className="flex shrink-0 items-center gap-3 text-sm">
-        <span className="hidden text-default-500 sm:inline">{name}</span>
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-green-800 text-xs font-semibold text-primary-foreground ring-2 ring-primary/20">
-          AD
-        </span>
+        <span className="hidden text-default-500 sm:inline">{user?.username}</span>
+        {user && (
+          <Badge variant="light" color="orange" tt="none" aria-label="บทบาท">
+            {ROLE_LABEL[user.role]}
+          </Badge>
+        )}
         <Tooltip label="ออกจากระบบ">
           <ActionIcon variant="subtle" color="gray" size="lg" onClick={logout} aria-label="ออกจากระบบ">
             <LogOut size={18} />

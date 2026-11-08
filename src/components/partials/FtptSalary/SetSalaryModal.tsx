@@ -137,7 +137,7 @@ export function SetSalaryModal({
           <Button variant="subtle" color="gray" onClick={onClose}>
             ยกเลิก
           </Button>
-          <Button color="green" onClick={submit} loading={set.isPending}>
+          <Button color="orange" onClick={submit} loading={set.isPending}>
             บันทึก
           </Button>
         </Group>

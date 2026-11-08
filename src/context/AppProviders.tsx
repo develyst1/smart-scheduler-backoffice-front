@@ -9,7 +9,7 @@ import "dayjs/locale/th";
 // Dark gray-black back-office theme with a green primary (money / management).
 // No SessionProvider yet — auth lands in a later wave; keep the shell runnable.
 const theme = createTheme({
-  primaryColor: "green",
+  primaryColor: "orange", // REQ-5010: app-wide theme colour (was green)
   primaryShade: 6,
   fontFamily: "var(--font-noto-sans-thai), system-ui, sans-serif",
   headings: { fontFamily: "var(--font-noto-sans-thai), system-ui, sans-serif" },

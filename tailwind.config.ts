@@ -17,7 +17,7 @@ const config: Config = {
       colors: {
         foreground: "#e6e8ec",
         content1: "#1f2023", // surface (sidebar / header / cards) — gray.8
-        primary: { DEFAULT: "#37b24d", foreground: "#ffffff" }, // green
+        primary: { DEFAULT: "#fd7e14", foreground: "#ffffff" }, // orange (Mantine orange.6; REQ-5010)
         success: "#2f9e44",
         warning: "#e8a23d",
         secondary: "#22b8cf",

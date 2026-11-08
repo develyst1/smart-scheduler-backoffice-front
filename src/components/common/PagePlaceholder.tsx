@@ -1,11 +1,11 @@
 "use client";
 
 import { Badge, Card, Group, Stack, Text, ThemeIcon } from "@mantine/core";
-import { Banknote, BarChart3, Boxes, Construction, Wallet, type LucideIcon } from "lucide-react";
+import { Banknote, BarChart3, Boxes, Construction, FileText, Wallet, type LucideIcon } from "lucide-react";
 
 // Icons are resolved by key inside this client component — a server page cannot
 // pass a component (function) across the RSC boundary.
-const ICONS = { inventory: Boxes, wallet: Wallet, payroll: Banknote, reports: BarChart3 } as const;
+const ICONS = { inventory: Boxes, wallet: Wallet, payroll: Banknote, reports: BarChart3, slip: FileText } as const;
 
 export type PlaceholderIcon = keyof typeof ICONS;
 
@@ -26,7 +26,7 @@ export default function PagePlaceholder({ title, subtitle, wave, endpoint, icon 
   return (
     <Card maw={640} mx="auto" mt="xl" padding="xl">
       <Stack gap="md" align="center" ta="center">
-        <ThemeIcon size={56} radius="xl" variant="light" color="green">
+        <ThemeIcon size={56} radius="xl" variant="light" color="orange">
           <Icon size={28} />
         </ThemeIcon>
         <div>
@@ -38,7 +38,7 @@ export default function PagePlaceholder({ title, subtitle, wave, endpoint, icon 
           </Text>
         </div>
         <Group gap="xs">
-          <Badge variant="light" color="green" leftSection={<Construction size={12} />}>
+          <Badge variant="light" color="orange" leftSection={<Construction size={12} />}>
             {wave}
           </Badge>
           <Badge variant="default">API: {endpoint}</Badge>

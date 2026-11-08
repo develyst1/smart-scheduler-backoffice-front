@@ -18,6 +18,10 @@ export default function proxy(req: NextRequest) {
 // Guard the admin pages only; /login, static assets and /_next are excluded.
 export const config = {
   matcher: [
+    "/",
+    "/my-slip/:path*",
+    "/revenue/:path*",
+    "/salary/:path*",
     "/dashboard/:path*",
     "/freelance-budgets/:path*",
     "/ftpt-salary/:path*",

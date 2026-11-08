@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Wallet } from "lucide-react";
-import { NAV_ITEMS, APP_NAME } from "../AdminLayout.config";
+import { APP_NAME, APP_SUB } from "../AdminLayout.config";
+import { menuFor } from "@/lib/roles/pages";
+import type { Role } from "@/types/app/roles";
 
 interface Props {
+  role: Role;
   /** desktop: ย่อเหลือไอคอน */
   collapsed: boolean;
   /** mobile: เปิด drawer */
@@ -16,13 +19,13 @@ interface Props {
 function Brand({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="flex items-center gap-3 px-5 py-5">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-green-800 text-primary-foreground shadow-md shadow-primary/30">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-orange-800 text-primary-foreground shadow-md shadow-primary/30">
         <Wallet size={20} />
       </span>
       {!collapsed && (
         <div className="leading-tight">
           <p className="text-sm font-semibold tracking-tight">{APP_NAME}</p>
-          <p className="text-xs text-default-400">การเงิน · สต๊อก · Payroll</p>
+          <p className="text-xs text-default-400">{APP_SUB}</p>
         </div>
       )}
     </div>
@@ -30,22 +33,31 @@ function Brand({ collapsed }: { collapsed: boolean }) {
 }
 
 function NavList({
+  role,
   collapsed,
   onNavigate,
 }: {
+  role: Role;
   collapsed: boolean;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
-      {NAV_ITEMS.map((item) => {
+    <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-2" aria-label="Menu">
+      {menuFor(role).map(({ group, items }) => (
+        <div key={group} className="flex flex-col gap-1">
+          {collapsed ? (
+            <div className="my-2 border-t border-default-200" />
+          ) : (
+            <p className="px-3 pb-1 pt-3 text-[11px] font-semibold tracking-wider text-default-400">{group}</p>
+          )}
+          {items.map((item) => {
         const Icon = item.icon;
         const active = pathname?.startsWith(item.href);
         return (
           <Link
-            key={item.key}
+            key={item.href}
             href={item.href}
             onClick={onNavigate}
             title={collapsed ? item.label : undefined}
@@ -73,11 +85,13 @@ function NavList({
           </Link>
         );
       })}
+        </div>
+      ))}
     </nav>
   );
 }
 
-export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: Props) {
+export default function Sidebar({ role, collapsed, mobileOpen, onCloseMobile }: Props) {
   return (
     <>
       {/* ── Desktop: sidebar ในเลย์เอาต์ ย่อ/ขยายได้ (ซ่อนบนจอเล็ก) ── */}
@@ -87,7 +101,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: Props)
         }`}
       >
         <Brand collapsed={collapsed} />
-        <NavList collapsed={collapsed} />
+        <NavList role={role} collapsed={collapsed} />
         {!collapsed && (
           <div className="px-5 py-4 text-xs text-default-400">v0.1 · ทีมงานหลังบ้าน</div>
         )}
@@ -103,7 +117,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }: Props)
           />
           <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r border-default-200 bg-content1 shadow-xl">
             <Brand collapsed={false} />
-            <NavList collapsed={false} onNavigate={onCloseMobile} />
+            <NavList role={role} collapsed={false} onNavigate={onCloseMobile} />
             <div className="px-5 py-4 text-xs text-default-400">v0.1 · ทีมงานหลังบ้าน</div>
           </aside>
         </div>

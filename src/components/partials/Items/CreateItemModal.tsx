@@ -109,7 +109,7 @@ export function CreateItemModal({ opened, onClose }: { opened: boolean; onClose:
             description="สินค้า+ครูควรเปิด · รายรับ/ค่าคงที่แบบไม่จำกัดปิดได้"
             checked={trackStock}
             onChange={(e) => setTrackStock(e.currentTarget.checked)}
-            color="green"
+            color="orange"
             mb={6}
           />
         </Group>
@@ -123,7 +123,7 @@ export function CreateItemModal({ opened, onClose }: { opened: boolean; onClose:
           <Button variant="subtle" color="gray" onClick={onClose}>
             ยกเลิก
           </Button>
-          <Button color="green" onClick={submit} loading={create.isPending}>
+          <Button color="orange" onClick={submit} loading={create.isPending}>
             บันทึก
           </Button>
         </Group>

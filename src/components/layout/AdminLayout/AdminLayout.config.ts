@@ -1,20 +1,3 @@
-import { LayoutDashboard, Boxes, Tags, PieChart } from "lucide-react";
-
-export interface NavItem {
-  key: string;
-  label: string;
-  href: string;
-  icon: typeof LayoutDashboard;
-}
-
-// Rebuilt backoffice (REQ-006): a P&L dashboard + one universal Items catalog (direction ×
-// cadence, ceiling/remaining) + tags. The old ops screens (Freelance Budgets / FT-PT Salary)
-// are retired — everything is now an item.
-export const NAV_ITEMS: NavItem[] = [
-  { key: "dashboard", label: "งบกำไร–ขาดทุน", href: "/dashboard", icon: LayoutDashboard },
-  { key: "revenue", label: "รายได้แยกตามกิจกรรม", href: "/revenue", icon: PieChart },
-  { key: "items", label: "รายการ (Items)", href: "/items", icon: Boxes },
-  { key: "tags", label: "แท็ก", href: "/tags", icon: Tags },
-];
-
-export const APP_NAME = "Smart Backoffice";
+// The menu is drawn from the role table in src/lib/roles/pages.ts (who may open what, per role) — this file only holds the brand.
+export const APP_NAME = "SOM BALANCE";
+export const APP_SUB = "BACK OFFICE";

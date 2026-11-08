@@ -37,13 +37,13 @@ export default function ItemsContent() {
       {/* ── Header ── */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-success/70">Catalog</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Catalog</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">รายการ (Items)</h1>
           <p className="mt-0.5 text-sm text-default-400">
             สินค้า · บริการ · รายรับ · รายจ่าย · ค่าใช้จ่ายคงที่ — ทุกอย่างเป็น item
           </p>
         </div>
-        <Button leftSection={<Plus size={16} />} color="green" onClick={() => setCreateOpen(true)}>
+        <Button leftSection={<Plus size={16} />} color="orange" onClick={() => setCreateOpen(true)}>
           เพิ่ม item
         </Button>
       </div>
@@ -64,7 +64,7 @@ export default function ItemsContent() {
       <Card padding={0} className="overflow-hidden">
         {query.isLoading ? (
           <Center h={240}>
-            <Loader color="green" />
+            <Loader color="orange" />
           </Center>
         ) : query.isError ? (
           <Center h={240}>

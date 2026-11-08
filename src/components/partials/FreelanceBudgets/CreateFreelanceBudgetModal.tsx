@@ -106,7 +106,7 @@ export function CreateFreelanceBudgetModal({
           <Button variant="subtle" color="gray" onClick={onClose}>
             ยกเลิก
           </Button>
-          <Button color="green" onClick={submit} loading={create.isPending}>
+          <Button color="orange" onClick={submit} loading={create.isPending}>
             บันทึก
           </Button>
         </Group>

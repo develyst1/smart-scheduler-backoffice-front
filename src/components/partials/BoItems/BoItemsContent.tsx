@@ -48,13 +48,13 @@ export default function BoItemsContent() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-success/70">Catalog</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Catalog</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">รายการ (Items)</h1>
           <p className="mt-0.5 text-sm text-default-400">
             ทุกอย่างเป็น item — รายรับ/รายจ่าย × ผันแปร/คงที่ · เคลื่อนไหวเข้า-ออกเพื่อบันทึกมูลค่า
           </p>
         </div>
-        <Button leftSection={<Plus size={16} />} color="green" onClick={openCreate}>
+        <Button leftSection={<Plus size={16} />} color="orange" onClick={openCreate}>
           เพิ่ม item
         </Button>
       </div>
@@ -85,7 +85,7 @@ export default function BoItemsContent() {
 
       <Card padding={0} className="overflow-hidden">
         {query.isLoading ? (
-          <Center h={240}><Loader color="green" /></Center>
+          <Center h={240}><Loader color="orange" /></Center>
         ) : query.isError ? (
           <Center h={240}><Text c="red" fz="sm">โหลด item ไม่สำเร็จ — ตรวจ backoffice API (พอร์ต 4010)</Text></Center>
         ) : items.length === 0 ? (

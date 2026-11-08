@@ -132,7 +132,7 @@ export function BoItemModal({
         )}
         {isEdit && (
           <>
-            <Switch label="ใช้งาน (active)" checked={active} onChange={(e) => setActive(e.currentTarget.checked)} color="green" />
+            <Switch label="ใช้งาน (active)" checked={active} onChange={(e) => setActive(e.currentTarget.checked)} color="orange" />
             {tagOptions.length > 0 && (
               <MultiSelect label="แท็ก" description="ตั้งค่าแท็กของ item (แทนที่ค่าเดิม)" data={tagOptions} value={tagValueIds} onChange={setTagValueIds} searchable clearable />
             )}
@@ -140,7 +140,7 @@ export function BoItemModal({
         )}
         <Group justify="flex-end" mt="sm">
           <Button variant="subtle" color="gray" onClick={onClose}>ยกเลิก</Button>
-          <Button color="green" onClick={submit} loading={busy}>บันทึก</Button>
+          <Button color="orange" onClick={submit} loading={busy}>บันทึก</Button>
         </Group>
       </Stack>
     </Modal>

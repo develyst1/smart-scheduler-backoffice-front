@@ -3,6 +3,8 @@
 // JS-readable (not httpOnly) so both proxy.ts (server) and the axios interceptor
 // (client) can read it — acceptable for an internal single-admin tool.
 
+import { isRole, type SessionUser } from "@/types/app/roles";
+
 const TOKEN_COOKIE = "bo_token";
 const TTL_SECONDS = 12 * 60 * 60; // ~12h, matches the ops JWT TTL default
 
@@ -23,15 +25,18 @@ export function clearToken() {
   document.cookie = `${TOKEN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
-/** Signed-in username, decoded from the JWT `sub` claim (display only — not trusted). */
-export function getUser(): string | null {
+/** The signed-in user from the token's claims `{sub, role, teacherId}` (SPEC-097 §3). Display and gating only — not trusted; null if the token is missing, unreadable or has no valid role. */
+export function getClaims(): SessionUser | null {
   const token = getToken();
   if (!token) return null;
   try {
     const payload = token.split(".")[1];
-    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-    const claims = JSON.parse(json) as { sub?: string };
-    return claims.sub ?? null;
+    const json = decodeURIComponent(
+      Array.from(atob(payload.replace(/-/g, "+").replace(/_/g, "/")), (c) => "%" + c.charCodeAt(0).toString(16).padStart(2, "0")).join(""),
+    );
+    const claims = JSON.parse(json) as { sub?: string; role?: unknown; teacherId?: number | null };
+    if (!claims.sub || !isRole(claims.role)) return null;
+    return { username: claims.sub, role: claims.role, teacherId: claims.teacherId ?? null };
   } catch {
     return null;
   }

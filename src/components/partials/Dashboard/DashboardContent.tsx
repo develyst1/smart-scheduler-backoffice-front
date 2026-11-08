@@ -26,7 +26,7 @@ export default function DashboardContent() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-success/70">Profit &amp; Loss</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Profit &amp; Loss</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">งบกำไร–ขาดทุน</h1>
           <p className="mt-0.5 text-sm text-default-400">รายรับ ลบ รายจ่าย จากทุกความเคลื่อนไหวของ item</p>
         </div>
@@ -43,7 +43,7 @@ export default function DashboardContent() {
       </div>
 
       {query.isLoading ? (
-        <Center h={280}><Loader color="green" /></Center>
+        <Center h={280}><Loader color="orange" /></Center>
       ) : query.isError ? (
         <Card padding="xl">
           <Text c="red" fw={500}>โหลดงบไม่สำเร็จ</Text>

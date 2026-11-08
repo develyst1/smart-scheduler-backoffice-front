@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Alert, Button, Card, PasswordInput, Stack, Text, TextInput, Title } from "@mantine/core";
 import { LogIn } from "lucide-react";
 import { login } from "@/services/auth.service";
-import { safeNext, setToken } from "@/lib/auth";
+import { clearToken, getClaims, safeNext, setToken } from "@/lib/auth";
+import { canOpen, homeFor } from "@/lib/roles/pages";
 import { ApiClientError } from "@/lib/api/client";
 
 export default function LoginPage() {
@@ -26,9 +27,13 @@ export default function LoginPage() {
     try {
       const res = await login(username.trim(), password);
       setToken(res.token);
-      const next = new URLSearchParams(window.location.search).get("next");
-      router.replace(safeNext(next));
+      const user = getClaims();
+      if (!user) throw new Error("no role in token");
+      // Land on the role's home; a `next` this role may not open falls back to it.
+      const next = safeNext(new URLSearchParams(window.location.search).get("next"), homeFor(user.role));
+      router.replace(canOpen(user.role, next.split("?")[0]) ? next : homeFor(user.role));
     } catch (err) {
+      clearToken();
       setError(err instanceof ApiClientError ? err.message : "เข้าสู่ระบบไม่สำเร็จ");
       setLoading(false);
     }
@@ -40,12 +45,12 @@ export default function LoginPage() {
         <form onSubmit={submit}>
           <Stack gap="md">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-success/70">Smart Backoffice</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-primary/70">SOM BALANCE · BACK OFFICE</p>
               <Title order={3} mt={4}>
-                เข้าสู่ระบบผู้ดูแล
+                เข้าสู่ระบบ
               </Title>
               <Text c="dimmed" fz="sm" mt={2}>
-                ระบบหลังบ้าน — การเงิน · สต๊อก · Payroll
+                ใช้ชื่อผู้ใช้และรหัสผ่านเดียวกับหน้าบ้าน
               </Text>
             </div>
             <TextInput
@@ -68,7 +73,7 @@ export default function LoginPage() {
             )}
             <Button
               type="submit"
-              color="green"
+              color="orange"
               loading={loading}
               fullWidth
               leftSection={<LogIn size={16} />}

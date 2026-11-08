@@ -37,7 +37,7 @@ export default function RevenueContent() {
     <div className="mx-auto max-w-6xl">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-success/70">Revenue</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Revenue</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">รายได้แยกตามกิจกรรม</h1>
           <p className="mt-0.5 text-sm text-default-400">
             ยอดขายรายเดือน แยกตามกีฬา และยอดใช้จ่ายรายลูกค้า
@@ -53,7 +53,7 @@ export default function RevenueContent() {
         />
       </div>
 
-      <Tabs defaultValue="activity" color="green">
+      <Tabs defaultValue="activity" color="orange">
         <Tabs.List>
           <Tabs.Tab value="activity" leftSection={<PieChart size={15} />}>
             แยกตามกีฬา
@@ -77,7 +77,7 @@ export default function RevenueContent() {
 function ActivityPanel({ month }: { month: string }) {
   const query = useRevenueByActivity(month);
 
-  if (query.isLoading) return <Center h={240}><Loader color="green" /></Center>;
+  if (query.isLoading) return <Center h={240}><Loader color="orange" /></Center>;
   if (query.isError)
     return (
       <Card padding="xl">
@@ -247,7 +247,7 @@ function CustomerPanel({ month }: { month: string }) {
       />
 
       {query.isLoading ? (
-        <Center h={200}><Loader color="green" /></Center>
+        <Center h={200}><Loader color="orange" /></Center>
       ) : query.isError ? (
         <Card padding="xl">
           <Text c="red" fw={500}>โหลดรายงานไม่สำเร็จ</Text>

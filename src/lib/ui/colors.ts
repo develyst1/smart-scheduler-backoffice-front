@@ -12,7 +12,7 @@ export type SemanticColor =
 
 export const MANTINE_COLOR: Record<SemanticColor, string> = {
   default: "gray",
-  primary: "green",
+  primary: "orange",
   secondary: "cyan",
   success: "green",
   warning: "orange",

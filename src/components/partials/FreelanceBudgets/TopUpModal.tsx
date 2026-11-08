@@ -75,7 +75,7 @@ export function TopUpModal({ item, onClose }: { item: CatalogItem | null; onClos
           <Button variant="subtle" color="gray" onClick={onClose}>
             ยกเลิก
           </Button>
-          <Button color="green" onClick={submit} loading={topUp.isPending}>
+          <Button color="orange" onClick={submit} loading={topUp.isPending}>
             เติมงบ
           </Button>
         </Group>

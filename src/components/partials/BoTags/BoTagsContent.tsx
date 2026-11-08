@@ -46,17 +46,17 @@ export default function BoTagsContent() {
     <div className="mx-auto max-w-4xl">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-success/70">Tags</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Tags</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">แท็ก</h1>
           <p className="mt-0.5 text-sm text-default-400">จัดกลุ่ม item ด้วยแท็ก (1 ค่า/กลุ่ม ต่อ item)</p>
         </div>
-        <Button leftSection={<Plus size={16} />} color="green" onClick={() => setGroupModal(true)}>
+        <Button leftSection={<Plus size={16} />} color="orange" onClick={() => setGroupModal(true)}>
           เพิ่มกลุ่มแท็ก
         </Button>
       </div>
 
       {query.isLoading ? (
-        <Center h={200}><Loader color="green" /></Center>
+        <Center h={200}><Loader color="orange" /></Center>
       ) : groups.length === 0 ? (
         <Center h={200}>
           <div className="text-center">
@@ -91,14 +91,14 @@ export default function BoTagsContent() {
       <Modal opened={groupModal} onClose={() => setGroupModal(false)} title="เพิ่มกลุ่มแท็ก" centered radius="lg">
         <Stack gap="md">
           <TextInput label="ชื่อกลุ่ม" placeholder="เช่น สาขา, หมวดสินค้า" value={groupName} onChange={(e) => setGroupName(e.currentTarget.value)} required />
-          <Button color="green" onClick={submitGroup} loading={createGroup.isPending}>บันทึก</Button>
+          <Button color="orange" onClick={submitGroup} loading={createGroup.isPending}>บันทึก</Button>
         </Stack>
       </Modal>
 
       <Modal opened={!!valueFor} onClose={() => setValueFor(null)} title="เพิ่มค่าแท็ก" centered radius="lg">
         <Stack gap="md">
           <TextInput label="ชื่อค่า" placeholder="เช่น สาขาหลัก" value={valueLabel} onChange={(e) => setValueLabel(e.currentTarget.value)} required />
-          <Button color="green" onClick={submitValue} loading={createValue.isPending}>บันทึก</Button>
+          <Button color="orange" onClick={submitValue} loading={createValue.isPending}>บันทึก</Button>
         </Stack>
       </Modal>
     </div>

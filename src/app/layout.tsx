@@ -24,7 +24,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Smart Backoffice",
+  title: "SOM BALANCE · BACK OFFICE",
   description: "ระบบหลังบ้าน — สต๊อก, Wallet, Payroll และรายงาน",
 };
 

@@ -58,13 +58,13 @@ export default function FtptSalaryContent() {
       {/* ── Header ── */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-success/70">Payroll</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Payroll</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">เงินเดือนครูประจำ / พาร์ทไทม์</h1>
           <p className="mt-0.5 text-sm text-default-400">
             ตั้งเงินเดือนครั้งเดียว · ระบบลงเป็นค่าใช้จ่ายคงที่ทุกเดือนอัตโนมัติ · แก้ไขแบบมีผลตามเดือน (ไม่แก้อดีต)
           </p>
         </div>
-        <Button leftSection={<Plus size={16} />} color="green" onClick={openCreate}>
+        <Button leftSection={<Plus size={16} />} color="orange" onClick={openCreate}>
           ตั้งเงินเดือนครู
         </Button>
       </div>
@@ -72,7 +72,7 @@ export default function FtptSalaryContent() {
       <Card padding={0} className="overflow-hidden">
         {query.isLoading ? (
           <Center h={240}>
-            <Loader color="green" />
+            <Loader color="orange" />
           </Center>
         ) : query.isError ? (
           <Center h={240}>
