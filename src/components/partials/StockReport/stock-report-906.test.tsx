@@ -1,10 +1,11 @@
 // TASK-906 — Stock Report shell (the typed fixture seam; the real reader waits on Sober's Q1). Run: `bun test src/components/partials/StockReport`.
 // Each test names the code whose removal makes it fail.
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test as bunTest } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MantineProvider } from "@mantine/core";
-import { STOCK_REPORT_SOURCE, listStockMovements } from "@/services/stock-report.service";
+import { STOCK_REPORT_SOURCE, listStockMovements, stockReportIsSample } from "@/services/stock-report.service";
+import { STOCK_SOURCE } from "@/services/stock.service";
 import { PAGE_RULES, canOpen } from "@/lib/roles/pages";
 import { MAX_PERIOD_DAYS, periodOf, periodProblem } from "./period";
 import { MovementTable } from "./StockReport";
@@ -12,9 +13,26 @@ import { MovementTable } from "./StockReport";
 const ui = (el: React.ReactElement) => renderToStaticMarkup(<MantineProvider>{el}</MantineProvider>);
 const ids = (rows: { id: string }[]) => rows.map((r) => r.id);
 
+// The shipped switches are "api" (the screen is wired to the live backoffice). These tests read the FIXTURE branch, so each one flips the switches to "fixture" and puts them back after it
+// (a later test file in the same process must see the shipped values). The API branch is checked in stock-report-wire.test.tsx.
+const test = (name: string, fn: () => void | Promise<void>) =>
+  bunTest(name, async () => {
+    const before = { ...STOCK_REPORT_SOURCE, products: STOCK_SOURCE.products };
+    STOCK_REPORT_SOURCE.movements = "fixture";
+    STOCK_REPORT_SOURCE.sales = "fixture";
+    STOCK_SOURCE.products = "fixture";
+    try {
+      await fn();
+    } finally {
+      STOCK_REPORT_SOURCE.movements = before.movements;
+      STOCK_REPORT_SOURCE.sales = before.sales;
+      STOCK_SOURCE.products = before.products;
+    }
+  });
+
 describe("the seam (listStockMovements)", () => {
-  test("it still answers from the fixture: the wiring TASK flips this one constant", () => {
-    expect(STOCK_REPORT_SOURCE).toBe("fixture");
+  bunTest("shipped: the report is wired to the live reads (both flags are api)", () => {
+    expect(STOCK_REPORT_SOURCE).toEqual({ movements: "api", sales: "api" });
   });
   test("both ends of the period are inclusive, newest first", async () => {
     const rows = await listStockMovements("ceo", { from: "2026-11-01", to: "2026-11-09" });
@@ -98,8 +116,24 @@ describe("the route and the gate (Sober's Q3)", () => {
     expect(canOpen("coach", "/stock/reports")).toBe(false);
     expect(canOpen("admin", "/stock/reports")).toBe(true);
   });
-  test("while the data is the fixture the page says so (Sample data)", () => {
-    expect(STOCK_REPORT_SOURCE).toBe("fixture");
+  test("while any tab is on the fixture the page says so (Sample data); live, it does not", () => {
+    expect(stockReportIsSample()).toBe(true); // this wrapper runs on the fixture
     expect(readFileSync("src/components/partials/StockReport/StockReport.tsx", "utf8")).toContain("Sample data");
+  });
+  bunTest("with every source live the notice is off (any one fixture tab turns it on)", () => {
+    const before = { ...STOCK_REPORT_SOURCE, products: STOCK_SOURCE.products };
+    try {
+      Object.assign(STOCK_REPORT_SOURCE, { movements: "api", sales: "api" });
+      STOCK_SOURCE.products = "api";
+      expect(stockReportIsSample()).toBe(false);
+      STOCK_REPORT_SOURCE.sales = "fixture";
+      expect(stockReportIsSample()).toBe(true);
+      STOCK_REPORT_SOURCE.sales = "api";
+      STOCK_SOURCE.products = "fixture";
+      expect(stockReportIsSample()).toBe(true);
+    } finally {
+      Object.assign(STOCK_REPORT_SOURCE, { movements: before.movements, sales: before.sales });
+      STOCK_SOURCE.products = before.products;
+    }
   });
 });

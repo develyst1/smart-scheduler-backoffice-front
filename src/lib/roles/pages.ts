@@ -30,8 +30,7 @@ export const PAGE_RULES: PageRule[] = [
   { href: "/stock/low", label: "Low Stock", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: BellRing },
   // 🔻 TASK-914 (Team B, lent to Team A): NOTIFICATION — the settings (who is told what, CEO only: an Admin never changes it) and the web feed (CEO + Admin). Fixtures until a backend store exists.
   { href: "/notify/settings", label: "Notification Setting", group: "NOTIFICATION", roles: ["ceo"], menu: true, icon: ShieldCheck },
-  { href: "/notify/inbox", label: "Notification Alert", group: "NOTIFICATION", roles: ["ceo", "admin"], menu: true, icon: BellRing },
-  // 🔻 TASK-905 / 🔻 TASK-910 (Team B, lent to Team A's Stock block): STOCK OUT, the sell page (CEO + Admin). One row; the page is the product picker + search, the cart (qty · discount · commission), the seller pick and Save.
+  { href: "/notify/inbox", label: "Notification Alert", group: "NOTIFICATION", roles: ["ceo", "admin"], menu: true, icon: BellRing },  // 🔻 TASK-905 / 🔻 TASK-910 (Team B, lent to Team A's Stock block): STOCK OUT, the sell page (CEO + Admin). One row; the page is the product picker + search, the cart (qty · discount · commission), the seller pick and Save.
   { href: "/stock/out", label: "STOCK OUT", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: ShoppingCart },
   // 🔻 TASK-906 (Team A's Stock block; final-ui registry): the Stock Report, CEO + Admin, no amounts on it. Shows sample data until TASK-904's reader is wired.
   { href: "/stock/reports", label: "Stock Report", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: Boxes },

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Autocomplete, Button, Grid, Group, Modal, Stack, Switch, TextInput } from "@mantine/core";
-import { draftOf, emptyDraft, validateProductForm, type ProductFormDraft, type ProductFormErrors } from "./stock-product-logic";
-import type { StockProduct, StockProductInput } from "@/types/app/stock";
+import { Autocomplete, Button, Grid, Group, Modal, Select, Stack, Switch, TextInput } from "@mantine/core";
+import { draftOf, emptyDraft, revenueCategoryOptions, validateProductForm, type ProductFormDraft, type ProductFormErrors } from "./stock-product-logic";
+import type { RevenueCategory, StockProduct, StockProductInput } from "@/types/app/stock";
 
 /** The form's title: «Add product» for a new one, «Edit product» for an existing one. */
 export const productFormTitle = (product: StockProduct | null): string => (product === null ? "Add product" : "Edit product");
@@ -16,6 +16,7 @@ export const productFormTitle = (product: StockProduct | null): string => (produ
 export function ProductFormBody({
   product,
   categories,
+  revenueCategories = [],
   defaultCategory,
   onClose,
   onSave,
@@ -24,6 +25,8 @@ export function ProductFormBody({
   /** null = a new product */
   product: StockProduct | null;
   categories: string[];
+  /** the revenue categories a sale of this product posts to (`GET /v1/stock/revenue-categories`) */
+  revenueCategories?: RevenueCategory[];
   defaultCategory?: string;
   onClose: () => void;
   onSave: (input: StockProductInput) => Promise<void>;
@@ -59,6 +62,19 @@ export function ProductFormBody({
         </Grid.Col>
         <Grid.Col span={{ base: 12, sm: 6 }}>
           <TextInput label="COMMISSION group" value={draft.commissionName} onChange={(e) => set({ commissionName: e.currentTarget.value })} data-field="commissionName" />
+        </Grid.Col>
+        <Grid.Col span={{ base: 12, sm: 6 }}>
+          {/* PENDING (Porter): «REVENUE CATEGORY» is a new word. Required on create; on an edit the current one is not shown (the list does not carry it) — leave it empty to keep it. */}
+          <Select
+            label="REVENUE CATEGORY"
+            data={revenueCategoryOptions(revenueCategories)}
+            value={draft.revenueCategoryId || null}
+            onChange={(v) => set({ revenueCategoryId: v ?? "" })}
+            placeholder={creating ? "Pick one" : "Keep current"}
+            error={errors.revenueCategoryId}
+            withAsterisk={creating}
+            data-field="revenueCategoryId"
+          />
         </Grid.Col>
         {creating && (
           <Grid.Col span={{ base: 12, sm: 6 }}>

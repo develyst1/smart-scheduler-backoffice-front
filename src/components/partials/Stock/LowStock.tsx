@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { Alert, Badge, Button, Card, Grid, Group, NumberInput, Table, Text } from "@mantine/core";
 import { AlertTriangle } from "lucide-react";
-import { useAllStockProducts, useLowStockThresholds, useSaveLowStockThresholds } from "./StockData";
+import { useAllStockProducts, useLowStockList, useLowStockThresholds, useSaveLowStockThresholds } from "./StockData";
 import { draftOfThresholds, lowProducts, settingRows, validateThresholds } from "./low-stock-logic";
 import { categoriesOf } from "./stock-product-logic";
 import { useRole } from "@/context/RoleContext";
 import { ErrorState, LoadingState } from "@/components/partials/Salary/parts";
 import { PageTitle } from "@/components/partials/Salary/PeopleParts";
-import type { LowStockThresholds, StockProduct } from "@/types/app/stock";
+import type { LowStockRow, LowStockThresholds, StockProduct } from "@/types/app/stock";
 
 /**
  * TASK-913 (REQ-120 R3.7) — LOW STOCK: the products whose balance is at or under the alert level of their TYPE, and the editable level per type («Alert (Unit)»).
@@ -19,10 +19,13 @@ import type { LowStockThresholds, StockProduct } from "@/types/app/stock";
 export function LowStockBody({
   products,
   thresholds,
+  low: serverLow,
   onSave,
 }: {
   products: StockProduct[];
   thresholds: LowStockThresholds;
+  /** the list as the server answered it (`GET /v1/stock/low-stock`); left out ⇒ computed here by the same rule from `products` + `thresholds` */
+  low?: LowStockRow[];
   onSave: (next: LowStockThresholds) => Promise<void>;
 }) {
   const rows = settingRows(categoriesOf(products), thresholds);
@@ -30,7 +33,8 @@ export function LowStockBody({
   const [bad, setBad] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const low = lowProducts(products, thresholds);
+  const low: LowStockRow[] =
+    serverLow ?? lowProducts(products, thresholds).map((l) => ({ id: l.product.id, code: l.product.code, name: l.product.name, category: l.product.category, quantity: l.product.quantity, threshold: l.threshold, under: l.under }));
 
   const save = async () => {
     const r = validateThresholds(draft);
@@ -120,15 +124,15 @@ export function LowStockBody({
                 </Table.Thead>
                 <Table.Tbody>
                   {low.map((l) => (
-                    <Table.Tr key={l.product.id} data-low-row={l.product.code}>
+                    <Table.Tr key={l.id} data-low-row={l.code}>
                       <Table.Td ff="monospace" fz="xs">
-                        {l.product.code}
+                        {l.code}
                       </Table.Td>
-                      <Table.Td fw={600}>{l.product.name}</Table.Td>
-                      <Table.Td>{l.product.category}</Table.Td>
+                      <Table.Td fw={600}>{l.name}</Table.Td>
+                      <Table.Td>{l.category}</Table.Td>
                       <Table.Td ta="right">
                         <Badge color="red" variant="light">
-                          {l.product.quantity}
+                          {l.quantity}
                         </Badge>
                       </Table.Td>
                       <Table.Td ta="right" className="tabular-nums">
@@ -164,16 +168,19 @@ export default function LowStock() {
   const role = useRole();
   const products = useAllStockProducts(role);
   const th = useLowStockThresholds(role);
+  const list = useLowStockList(role);
   const save = useSaveLowStockThresholds(role);
   if (products.isError) return <ErrorState error={products.error} onRetry={() => products.refetch()} />;
   if (th.isError) return <ErrorState error={th.error} onRetry={() => th.refetch()} />;
-  if (!role || !products.data || !th.data) return <LoadingState />;
+  if (list.isError) return <ErrorState error={list.error} onRetry={() => list.refetch()} />;
+  if (!role || !products.data || !th.data || !list.data) return <LoadingState />;
   return (
     <LowStockBody
       // re-seed the boxes when the saved levels (or the category list) change
       key={JSON.stringify(th.data) + categoriesOf(products.data).join("|")}
       products={products.data}
       thresholds={th.data}
+      low={list.data}
       onSave={async (next) => void (await save.mutateAsync(next))}
     />
   );

@@ -30,8 +30,10 @@ export interface ProductFormDraft {
   commissionName: string;
   active: boolean;
   openingQuantity: string;
+  /** "" = not picked (the read does not return a product's current one, so an edit starts empty and sends nothing unless it is changed) */
+  revenueCategoryId: string;
 }
-export type ProductFormErrors = Partial<Record<"code" | "name" | "category" | "price" | "openingQuantity", true>>;
+export type ProductFormErrors = Partial<Record<"code" | "name" | "category" | "price" | "openingQuantity" | "revenueCategoryId", true>>;
 
 /**
  * The form → the write input, or the fields that are wrong (nothing is sent while any is). The commission is the GROUP NAME only (empty = no commission); the amount lives on the group (TASK-907 Q1b).
@@ -47,6 +49,7 @@ export function validateProductForm(d: ProductFormDraft, creating: boolean): { i
   const qtyText = d.openingQuantity.trim();
   const qty = qtyText === "" ? 0 : /^\d+$/.test(qtyText) ? Number(qtyText) : null;
   if (creating && qty === null) errors.openingQuantity = true;
+  if (creating && !d.revenueCategoryId) errors.revenueCategoryId = true; // the real route refuses a product with no revenue category
   if (Object.keys(errors).length > 0) return { errors };
   return {
     input: {
@@ -57,11 +60,23 @@ export function validateProductForm(d: ProductFormDraft, creating: boolean): { i
       commissionGroup: d.commissionName.trim() === "" ? null : d.commissionName.trim(),
       active: d.active,
       ...(creating ? { openingQuantity: qty as number } : {}),
+      ...(d.revenueCategoryId ? { revenueCategoryId: d.revenueCategoryId } : {}),
     },
   };
 }
 
-export const emptyDraft = (category = ""): ProductFormDraft => ({ code: "", name: "", category, price: "", commissionName: "", active: true, openingQuantity: "0" });
+/** The select's data: the revenue categories grouped by their type (SALES · FNB · RENT · OTHER), in the order the route sent them. */
+export function revenueCategoryOptions(cats: readonly { id: string; type: string; name: string }[]): { group: string; items: { value: string; label: string }[] }[] {
+  const groups: { group: string; items: { value: string; label: string }[] }[] = [];
+  for (const c of cats) {
+    let g = groups.find((x) => x.group === c.type);
+    if (!g) groups.push((g = { group: c.type, items: [] }));
+    g.items.push({ value: c.id, label: c.name });
+  }
+  return groups;
+}
+
+export const emptyDraft =(category = ""): ProductFormDraft => ({ code: "", name: "", category, price: "", commissionName: "", active: true, openingQuantity: "0", revenueCategoryId: "" });
 
 export const draftOf = (p: StockProduct): ProductFormDraft => ({
   code: p.code,
@@ -71,4 +86,5 @@ export const draftOf = (p: StockProduct): ProductFormDraft => ({
   commissionName: p.commissionGroup?.name ?? "",
   active: p.active,
   openingQuantity: "0",
+  revenueCategoryId: "",
 });

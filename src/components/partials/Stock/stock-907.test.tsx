@@ -4,14 +4,20 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MantineProvider } from "@mantine/core";
-import { StockWriteError, createStockProduct, listStockProducts, resetStockFixture, updateStockProduct } from "@/services/stock.service";
+import { STOCK_SOURCE, StockWriteError, createStockProduct, listStockProducts, resetStockFixture, updateStockProduct } from "@/services/stock.service";
 import { canOpen, menuFor } from "@/lib/roles/pages";
 import { StockProductsBody } from "./StockProducts";
 import { ProductFormBody, productFormTitle } from "./ProductFormModal";
 import { bahtTextToSatang, categoriesOf, commissionText, draftOf, emptyDraft, filterByCategory, satangToInput, validateProductForm } from "./stock-product-logic";
 import type { StockProduct } from "@/types/app/stock";
 
-afterEach(() => resetStockFixture());
+STOCK_SOURCE.products = "fixture"; // these tests run on the fixture (the shipped switch is "api"; the API branch is tested in stock-907-wire.test.tsx)
+STOCK_SOURCE.productWrites = "fixture";
+afterEach(() => {
+  resetStockFixture();
+  STOCK_SOURCE.products = "fixture";
+  STOCK_SOURCE.productWrites = "fixture";
+});
 
 const ui = (el: React.ReactElement) => renderToStaticMarkup(<MantineProvider>{el}</MantineProvider>);
 const noop = async () => {};
@@ -32,7 +38,7 @@ describe("the list (listStockProducts with includeInactive)", () => {
 describe("categories and the filter (categoriesOf / filterByCategory)", () => {
   test("the tabs are the distinct categories A→Z; «All» (null) keeps every product, a tab keeps its own", async () => {
     const all = await everything();
-    expect(categoriesOf(all)).toEqual(["Bike", "F&B", "Inlineskate", "Miller division", "Other", "Safety"]);
+    expect(categoriesOf(all)).toEqual(["Bike", "F&B", "Inlineskate", "Miller", "Other", "Safety"]);
     expect(filterByCategory(all, null).length).toBe(12);
     expect(codes(filterByCategory(all, "Bike"))).toEqual(["BIK-BAL-050"]);
     expect(codes(filterByCategory(all, "F&B")).sort()).toEqual(["FB-SNK-071", "FB-WAT-070"]);
@@ -58,7 +64,7 @@ describe("the page, rendered", () => {
   });
   test("the tab bar has «All» and every category", async () => {
     const html = ui(<StockProductsBody products={await everything()} onCreate={noop} onUpdate={noop} />);
-    for (const c of ["All", "Bike", "F&amp;B", "Inlineskate", "Miller division", "Other", "Safety"]) expect(html).toContain(`>${c}<`);
+    for (const c of ["All", "Bike", "F&amp;B", "Inlineskate", "Miller", "Other", "Safety"]) expect(html).toContain(`>${c}<`);
   });
   test("a page with no product says «No product found»", () => {
     expect(ui(<StockProductsBody products={[]} onCreate={noop} onUpdate={noop} />)).toContain("No product found");
@@ -66,10 +72,10 @@ describe("the page, rendered", () => {
 });
 
 describe("the form's rules (validateProductForm)", () => {
-  const ok = { ...emptyDraft("Bike"), code: "NEW-1", name: "New bike", price: "1290.5", commissionName: "Group A", openingQuantity: "6" };
-  test("a valid new product → integer satang, commission group, the opening balance", () => {
+  const ok = { ...emptyDraft("Bike"), code: "NEW-1", name: "New bike", price: "1290.5", commissionName: "Group A", openingQuantity: "6", revenueCategoryId: "rc-1" };
+  test("a valid new product → integer satang, commission group, the opening balance, the revenue category", () => {
     const r = validateProductForm(ok, true);
-    expect("input" in r && r.input).toEqual({ code: "NEW-1", name: "New bike", category: "Bike", priceSatang: 129_050, commissionGroup: "Group A", active: true, openingQuantity: 6 }); // the write carries the group NAME only (TASK-911; Sober Q1b)
+    expect("input" in r && r.input).toEqual({ code: "NEW-1", name: "New bike", category: "Bike", priceSatang: 129_050, commissionGroup: "Group A", active: true, openingQuantity: 6, revenueCategoryId: "rc-1" }); // the write carries the group NAME only (TASK-911; Sober Q1b)
   });
   test("the commission is the group NAME only: empty = no commission, a name is sent as the string; there is no per-product amount (Sober Q1b)", () => {
     const none = validateProductForm({ ...ok, commissionName: "  " }, true);
@@ -89,6 +95,11 @@ describe("the form's rules (validateProductForm)", () => {
   test("code, name, category are required; the opening balance must be a whole number — on CREATE only (an edit ignores it and has no code)", () => {
     const r = validateProductForm({ ...ok, code: " ", name: "", category: "", openingQuantity: "1.5" }, true);
     expect("errors" in r && Object.keys(r.errors).sort()).toEqual(["category", "code", "name", "openingQuantity"]);
+    // a new product with no revenue category is refused on the screen (the real route answers 400 — such a product could never be sold); an edit may leave it empty ("keep current")
+    const noCat = validateProductForm({ ...ok, revenueCategoryId: "" }, true);
+    expect("errors" in noCat && Object.keys(noCat.errors)).toEqual(["revenueCategoryId"]);
+    const editNoCat = validateProductForm({ ...ok, revenueCategoryId: "" }, false);
+    expect("input" in editNoCat && "revenueCategoryId" in editNoCat.input).toBe(false);
     const edit = validateProductForm({ ...ok, code: "", openingQuantity: "garbage" }, false);
     expect("input" in edit && "openingQuantity" in edit.input).toBe(false);
     expect("input" in edit && "code" in edit.input && edit.input.code).toBe("");
@@ -104,7 +115,7 @@ describe("the form's rules (validateProductForm)", () => {
 
 describe("add / edit round-trip on the fixture seam", () => {
   test("create: the product appears in the list with the opening balance; its Model code is unique (any case)", async () => {
-    const made = await createStockProduct("admin", { code: "NEW-1", name: "New bike", category: "Bike", priceSatang: 129_050, commissionGroup: null, active: true, openingQuantity: 6 });
+    const made = await createStockProduct("ceo", { code: "NEW-1", name: "New bike", category: "Bike", priceSatang: 129_050, commissionGroup: null, active: true, openingQuantity: 6, revenueCategoryId: "rc-sales" });
     const row = (await everything()).find((p) => p.id === made.id) as StockProduct;
     expect([row.code, row.quantity, row.priceSatang, row.commissionGroup]).toEqual(["NEW-1", 6, 129_050, null]);
     const dup = await createStockProduct("ceo", { code: "new-1", name: "Dup", category: "Bike", priceSatang: 1, commissionGroup: null, active: true }).then(
@@ -121,9 +132,13 @@ describe("add / edit round-trip on the fixture seam", () => {
     expect([after.code, after.quantity]).toEqual([before.code, before.quantity]);
     expect(codes(await listStockProducts("ceo")).includes("MIL-HEL-010")).toBe(false); // inactive ⇒ off the picker
   });
-  test("a Coach cannot write; an unknown id is NOT_FOUND", async () => {
-    const forbidden = await createStockProduct("coach", { code: "X", name: "x", category: "c", priceSatang: 1, commissionGroup: null, active: true }).then(() => null, (e: unknown) => e);
-    expect(forbidden instanceof StockWriteError && forbidden.code).toBe("FORBIDDEN");
+  test("only the CEO writes a product (the real routes are CEO-only): an Admin and a Coach are FORBIDDEN; an unknown id is NOT_FOUND", async () => {
+    for (const role of ["admin", "coach"] as const) {
+      const forbidden = await createStockProduct(role, { code: "X", name: "x", category: "c", priceSatang: 1, commissionGroup: null, active: true }).then(() => null, (e: unknown) => e);
+      expect(forbidden instanceof StockWriteError && forbidden.code).toBe("FORBIDDEN");
+      const noEdit = await updateStockProduct(role, "any", { name: "x" }).then(() => null, (e: unknown) => e);
+      expect(noEdit instanceof StockWriteError && noEdit.code).toBe("FORBIDDEN");
+    }
     const missing = await updateStockProduct("ceo", "nope", { name: "x" }).then(() => null, (e: unknown) => e);
     expect(missing instanceof StockWriteError && missing.code).toBe("NOT_FOUND");
   });
@@ -161,8 +176,8 @@ describe("the page rule and the seam", () => {
     expect(canOpen("admin", "/stock/products")).toBe(true);
     expect(canOpen("coach", "/stock/products")).toBe(false);
   });
-  test("the writes are fixture-only for now (no write shape is defined), and no component imports the fixture", () => {
-    expect(readFileSync("src/services/stock.service.ts", "utf8")).toContain('writes: "fixture"');
+  test("the product writes are on the API (their own switch, `productWrites`, shipped as \"api\"), and no component imports the fixture", () => {
+    expect(readFileSync("src/services/stock.service.ts", "utf8")).toContain('productWrites: "api"');
     for (const f of ["StockProducts.tsx", "ProductFormModal.tsx", "StockData.ts", "stock-product-logic.ts"]) expect(readFileSync(`src/components/partials/Stock/${f}`, "utf8")).not.toContain("__fixtures__");
   });
 });

@@ -16,6 +16,7 @@ import type { StockProduct } from "@/types/app/stock";
 
 const ui = (el: React.ReactElement) => renderToStaticMarkup(<MantineProvider>{el}</MantineProvider>);
 const noop = () => {};
+STOCK_SOURCE.products = "fixture"; // the shipped switch is "api" (asserted below from the service's source); these tests read the fixture, the API branch is stubbed further down
 const all = await listStockProducts("ceo");
 const by = (code: string) => all.find((p) => p.code === code) as StockProduct;
 const codes = (xs: StockProduct[]) => xs.map((p) => p.code);
@@ -33,8 +34,8 @@ describe("the seam (listStockProducts)", () => {
     expect(Number.isInteger(by("FB-WAT-070").priceSatang)).toBe(true);
     expect(by("OTH-SOC-081").quantity).toBe(0);
   });
-  test("the fixture switch says fixture (off until 904 deploys), the shape has NO location, and no component imports the fixture (only the service does)", () => {
-    expect(STOCK_SOURCE.products).toBe("fixture");
+  test("the SHIPPED switch is \"api\" (read from the service's source: a test pins the fixture at run time), the shape has NO location, and no component imports the fixture (only the service does)", () => {
+    expect(/products: "api"/.test(readFileSync("src/services/stock.service.ts", "utf8"))).toBe(true);
     expect(all.every((p) => !("location" in p))).toBe(true);
     for (const f of readdirSync("src/components/partials/Stock").filter((x) => /\.(tsx?|ts)$/.test(x) && !/\.test\.tsx?$/.test(x))) {
       expect(readFileSync(`src/components/partials/Stock/${f}`, "utf8")).not.toContain("__fixtures__");
@@ -155,6 +156,12 @@ describe("the API branch (flipped to \"api\" — what the wiring will do)", () =
     expect(codes(rows)).toEqual(["A-1", "B-2"]);
     expect(rows[0].priceSatang).toBe(12_050);
     expect(rows[0].quantity).toBe(0);
+  });
+  test("a product with no category tag (the real route's `category: null`) reads as an empty string, never null", async () => {
+    STOCK_SOURCE.products = "api";
+    stub(() => ({ status: 200, data: [{ ...WIRE[0], category: null }] }));
+    const rows = await listStockProducts("ceo");
+    expect(rows[0].category).toBe("");
   });
   test("a search term goes as ?q=; a Coach never makes the request; a non-array body is an empty list, not a crash", async () => {
     STOCK_SOURCE.products = "api";

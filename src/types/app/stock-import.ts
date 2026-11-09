@@ -11,8 +11,8 @@ export interface StockSnapshot {
   priceSatang?: Satang;
   quantity?: number;
   category?: string | null;
-  /** the product's commission group and its per-unit amount; null = none (as `GET /v1/stock/products`) */
-  commissionGroup?: { name: string; amountSatang: Satang } | null;
+  /** the commission GROUP NAME only (the real preview sends the name; the amount lives on the group); null = none */
+  commissionGroup?: string | null;
 }
 
 export interface ImportDiffRow {
@@ -36,8 +36,10 @@ export interface ImportPreview {
   rows: ImportDiffRow[];
   /** sheet columns the import does not write (e.g. "Other" = future branches, picture, note…) — PENDING Sober Q3 */
   notImported: string[];
-  /** warnings to read before confirming (e.g. the Other-branch guard: a future non-zero "Other" balance). Absent or empty = none. (Sober 2026-11-09) */
+  /** warnings to read before confirming, one sentence each (the real route sends `{model,row,message}`; the service words them). Absent or empty = none. */
   flags?: string[];
+  /** rows of the sheet that match the stock exactly: counted, not listed */
+  unchanged?: number;
 }
 
 /** POST /v1/stock/import/apply — PENDING Sober Q2 (body = the batch id) and Q4 (result keys). */

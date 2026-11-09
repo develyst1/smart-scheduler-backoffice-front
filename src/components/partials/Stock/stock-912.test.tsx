@@ -11,7 +11,13 @@ import StockProductPicker from "./StockProductPicker";
 import { StockInReceiveBody } from "./StockInReceive";
 import type { StockInRequest, StockProduct } from "@/types/app/stock";
 
-afterEach(() => resetStockFixture());
+STOCK_SOURCE.products = "fixture"; // these tests run on the fixture (the shipped switches are "api"; the API branch is in stock-912-wire.test.tsx)
+STOCK_SOURCE.stockIn = "fixture";
+afterEach(() => {
+  resetStockFixture();
+  STOCK_SOURCE.products = "fixture";
+  STOCK_SOURCE.stockIn = "fixture";
+});
 
 const ui = (el: React.ReactElement) => renderToStaticMarkup(<MantineProvider>{el}</MantineProvider>);
 const all = await listStockProducts("ceo");
@@ -94,8 +100,8 @@ describe("the fixture write seam (receiveStock)", () => {
     expect(missing instanceof StockWriteError && missing.body).toEqual({ error: { code: "NOT_FOUND", message: "Product not found", details: {} } });
     expect((await now("FB-WAT-070")).quantity).toBe(8); // none of the refusals wrote anything
   });
-  test("the write is behind the fixture switch (off until the BE deploys), and the receive screen imports no fixture", () => {
-    expect(STOCK_SOURCE.writes).toBe("fixture");
+  test("the write is on the API switch (shipped \"api\", read from the service's source), and the receive screen imports no fixture", () => {
+    expect(readFileSync("src/services/stock.service.ts", "utf8")).toContain('stockIn: "api"');
     for (const f of ["StockInReceive.tsx", "stock-in-logic.ts"]) expect(readFileSync(`src/components/partials/Stock/${f}`, "utf8")).not.toContain("__fixtures__");
   });
 });

@@ -15,9 +15,9 @@ const p = (id: string, code: string, name: string, category: string, price: numb
 });
 
 export const STOCK_PRODUCTS_FIXTURE: StockProduct[] = [
-  p("p1", "MIL-IN-001", "Miller inline skate — Seaworld", "Miller division", 3900, 6, ["Miller skate", 100]),
-  p("p2", "MIL-HEL-010", "Miller helmet — M", "Miller division", 1290, 4, ["Miller helmet", 40]),
-  p("p3", "MIL-PAD-011", "Miller pads set", "Miller division", 990, 7, ["Miller pads", 40]),
+  p("p1", "MIL-IN-001", "Miller inline skate — Seaworld", "Miller", 3900, 6, ["Miller skate", 100]),
+  p("p2", "MIL-HEL-010", "Miller helmet — M", "Miller", 1290, 4, ["Miller helmet", 40]),
+  p("p3", "MIL-PAD-011", "Miller pads set", "Miller", 990, 7, ["Miller pads", 40]),
   p("p4", "ANI-HEL-020", "Animal helmet — S", "Safety", 790, 9, ["Animal Helmet", 40]),
   p("p5", "INL-SK-030", "Inline skate — kids", "Inlineskate", 1990, 12, null),
   p("p6", "BIK-BAL-050", "Balance bike", "Bike", 3200, 5, ["Royal baby", 50]),

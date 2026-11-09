@@ -21,7 +21,13 @@ import { NotificationSettingsBody } from "./NotificationSettings";
 import { NotificationFeedBody } from "./NotificationFeed";
 import { NOTIFY_TYPES } from "@/types/app/notification";
 
-afterEach(() => resetNotificationFixture());
+NOTIF_SOURCE.recipients = "fixture"; // these tests run on the fixture (the shipped switches are "api"; the API branch is in notification-914-wire.test.tsx)
+NOTIF_SOURCE.feed = "fixture";
+afterEach(() => {
+  resetNotificationFixture();
+  NOTIF_SOURCE.recipients = "fixture";
+  NOTIF_SOURCE.feed = "fixture";
+});
 
 const ui = (el: React.ReactElement) => renderToStaticMarkup(<MantineProvider>{el}</MantineProvider>);
 
@@ -70,8 +76,8 @@ describe("the web feed (listNotifications / mark read)", () => {
     const forbidden = await markAllNotificationsRead("coach").then(() => null, (x: unknown) => x);
     expect(forbidden instanceof NotificationError && forbidden.body).toEqual({ error: { code: "FORBIDDEN", message: "Not allowed", details: {} } });
   });
-  test("the data is on the fixture switch, and no component imports the fixture", () => {
-    expect(NOTIF_SOURCE).toEqual({ recipients: "fixture", feed: "fixture" });
+  test("the data is on the API switches (shipped \"api\", read from the service's source), and no component imports the fixture", () => {
+    expect(readFileSync("src/services/notification.service.ts", "utf8")).toContain('{ recipients: "api", feed: "api" }');
     for (const f of readdirSync("src/components/partials/Notification").filter((x) => /\.(tsx?|ts)$/.test(x) && !/\.test\.tsx?$/.test(x))) {
       expect(readFileSync(`src/components/partials/Notification/${f}`, "utf8")).not.toContain("__fixtures__");
     }

@@ -1,18 +1,30 @@
 // Stock git-style import (BF half of TASK-904), on the fixture seam. Run: `bun test src/components/partials/StockImport`.
 // Each test names the code whose removal makes it fail.
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test as bunTest } from "bun:test";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MantineProvider } from "@mantine/core";
 import { AxiosError } from "axios";
 import { api, ApiClientError } from "@/lib/api/client";
-import { applyStockImport, previewStockImport } from "@/services/stock-import.service";
+import { STOCK_IMPORT_SOURCE, applyStockImport, previewStockImport } from "@/services/stock-import.service";
 import { canOpen, menuFor } from "@/lib/roles/pages";
 import { DiffBody, ResultBody } from "./StockImport";
 import { countDiff, fieldDeltas, groupByKind, isStaleBatch, negativeBalanceDetails, signedQty } from "./import-logic";
 
 const ui = (el: React.ReactElement) => renderToStaticMarkup(<MantineProvider>{el}</MantineProvider>);
 const file = (name: string) => ({ name });
+
+// The shipped switch is "api" (wired to the live backoffice). These tests read the FIXTURE branch, so each flips it and puts it back after itself; the API branch is in stock-import-wire.test.tsx.
+const test = (name: string, fn: () => void | Promise<void>) =>
+  bunTest(name, async () => {
+    const before = STOCK_IMPORT_SOURCE.import;
+    STOCK_IMPORT_SOURCE.import = "fixture";
+    try {
+      await fn();
+    } finally {
+      STOCK_IMPORT_SOURCE.import = before;
+    }
+  });
 
 describe("the diff", () => {
   test("rows are grouped by kind in the fixed order, and every kind is counted", async () => {
@@ -47,11 +59,11 @@ describe("the diff", () => {
     const row = p.rows.find((r) => r.model === "ANI-HEL-020")!;
     expect(fieldDeltas(row.before, row.after).map((d) => d.field)).toEqual(["priceSatang", "category", "commissionGroup"]);
     // an unchanged group is not a change; a removed group is
-    expect(fieldDeltas({ commissionGroup: { name: "A", amountSatang: 1 } }, { commissionGroup: { name: "A", amountSatang: 1 } })).toEqual([]);
-    expect(fieldDeltas({ commissionGroup: { name: "A", amountSatang: 1 } }, { commissionGroup: null }).map((d) => d.field)).toEqual(["commissionGroup"]);
+    expect(fieldDeltas({ commissionGroup: "A" }, { commissionGroup: "A" })).toEqual([]);
+    expect(fieldDeltas({ commissionGroup: "A" }, { commissionGroup: null }).map((d) => d.field)).toEqual(["commissionGroup"]);
     const html = ui(<DiffBody preview={p} />);
     expect(html).toContain("Category: Safety → Helmets");
-    expect(html).toContain("Commission group: Animal Helmet (40.00 ฿) → Animal Helmet (50.00 ฿)");
+    expect(html).toContain("Commission group: Animal Helmet → Animal Helmet Pro"); // the real preview sends the group NAME
   });
 
   test("the kind strings are exactly the contract's four", async () => {

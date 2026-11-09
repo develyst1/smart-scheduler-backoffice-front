@@ -11,7 +11,13 @@ import { LowStockBody } from "./LowStock";
 import { categoriesOf } from "./stock-product-logic";
 import type { StockProduct } from "@/types/app/stock";
 
-afterEach(() => resetStockFixture());
+STOCK_SOURCE.products = "fixture"; // these tests run on the fixture (the shipped switches are "api"; the API branch is in stock-913-wire.test.tsx)
+STOCK_SOURCE.lowStock = "fixture";
+afterEach(() => {
+  resetStockFixture();
+  STOCK_SOURCE.products = "fixture";
+  STOCK_SOURCE.lowStock = "fixture";
+});
 
 const ui = (el: React.ReactElement) => renderToStaticMarkup(<MantineProvider>{el}</MantineProvider>);
 const everything = () => listStockProducts("ceo", undefined, { includeInactive: true });
@@ -26,11 +32,13 @@ describe("the defaults (R3.7)", () => {
 
 describe("which type a category falls under (typeKeyFor / thresholdOf)", () => {
   const keys = Object.keys(DEFAULT_THRESHOLDS);
-  test("the same name in any case; «Miller division» falls under «Miller» (its first word); a category with no type has none", () => {
+  test("the EXACT name only (trimmed, any case) — the back end's rule; «Miller division» is NOT «Miller» (no first-word guess); a category with no type has none", () => {
     expect(typeKeyFor("f&b", keys)).toBe("F&B");
-    expect(typeKeyFor("Miller division", keys)).toBe("Miller");
+    expect(typeKeyFor("  MILLER ", keys)).toBe("Miller");
+    expect(typeKeyFor("Miller division", keys)).toBeNull();
+    expect(thresholdOf("Miller division", DEFAULT_THRESHOLDS)).toBeNull();
+    expect(thresholdOf("Miller", DEFAULT_THRESHOLDS)).toBe(5);
     expect(typeKeyFor("Bike", keys)).toBeNull();
-    expect(thresholdOf("Miller division", DEFAULT_THRESHOLDS)).toBe(5);
     expect(thresholdOf("Bike", DEFAULT_THRESHOLDS)).toBeNull();
   });
 });
@@ -99,8 +107,8 @@ describe("the thresholds seam (fixture; getLowStockThresholds / setLowStockThres
     expect(await getLowStockThresholds("coach")).toEqual({});
     expect(await getLowStockThresholds("ceo")).toEqual(DEFAULT_THRESHOLDS);
   });
-  test("the store is behind the fixture switch, the screen imports no fixture, and resetStockFixture puts the defaults back", async () => {
-    expect(STOCK_SOURCE.writes).toBe("fixture");
+  test("the store is on the API switch (shipped \"api\", read from the service's source), the screen imports no fixture, and resetStockFixture puts the fixture defaults back", async () => {
+    expect(readFileSync("src/services/stock.service.ts", "utf8")).toContain('lowStock: "api"');
     for (const f of ["LowStock.tsx", "low-stock-logic.ts"]) expect(readFileSync(`src/components/partials/Stock/${f}`, "utf8")).not.toContain("__fixtures__");
     await setLowStockThresholds("ceo", { X: 9 });
     resetStockFixture();

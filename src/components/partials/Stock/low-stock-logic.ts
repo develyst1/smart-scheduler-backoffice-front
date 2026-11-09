@@ -8,15 +8,12 @@ export const DEFAULT_THRESHOLDS: LowStockThresholds = { "F&B": 10, Safety: 1, Mi
 const norm = (s: string): string => s.trim().toLowerCase();
 
 /**
- * Which threshold KEY a category falls under: the same name (any case), or — «Miller division» under «Miller» — the category's first word. No match ⇒ null.
- * (The real category list comes with the 904 import; until then this keeps the customer's short type names working against longer category names.)
+ * Which threshold KEY a category falls under: the SAME name (trimmed, any case) — exactly the real rule of TASK-919 on the back end. No match ⇒ null (the type has no alert).
+ * (The first-word guess of the fixture era is gone: the real categories come from the 904 import, and the Setting panel lists every one of them.)
  */
 export function typeKeyFor(category: string, keys: readonly string[]): string | null {
   const c = norm(category);
-  const exact = keys.find((k) => norm(k) === c);
-  if (exact !== undefined) return exact;
-  const first = c.split(/\s+/)[0];
-  return keys.find((k) => norm(k) === first) ?? null;
+  return keys.find((k) => norm(k) === c) ?? null;
 }
 
 /** A category's alert level: its type's number, or null (no alert) when its type has none or no type matches. */

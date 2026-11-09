@@ -37,7 +37,7 @@ export interface FieldDelta {
   after: string | number | null;
 }
 
-const groupText = (g: StockSnapshot["commissionGroup"]): string | null => (g ? `${g.name} · ${g.amountSatang}` : null);
+const groupText = (g: StockSnapshot["commissionGroup"]): string | null => (g ? g : null);
 
 /** The name / price / category / commission-group edits of one row (a `field_change`). A quantity move is the row's `delta`, never a field edit. */
 export function fieldDeltas(before: StockSnapshot | null, after: StockSnapshot | null): FieldDelta[] {
@@ -71,6 +71,20 @@ export function negativeBalanceDetails(error: unknown): NegativeBalanceDetails |
   const d = e.details as Partial<NegativeBalanceDetails> | null | undefined;
   if (!d || typeof d.model !== "string" || typeof d.name !== "string" || typeof d.resultingBalance !== "number") return null;
   return { model: d.model, name: d.name, resultingBalance: d.resultingBalance };
+}
+
+/**
+ * A 400 on the preview lists the bad cells in `error.details = { errors: [{row, column, message}], total }`. Returns up to `max` lines («row 7 · Name: Name ว่าง») and how many more there are.
+ * Any other error, or a malformed details object, gives nothing.
+ */
+export function sheetProblems(error: unknown, max = 10): { lines: string[]; more: number } {
+  const d = (error as { details?: unknown } | null)?.details as { errors?: unknown; total?: unknown } | null | undefined;
+  if (!d || !Array.isArray(d.errors)) return { lines: [], more: 0 };
+  const lines = d.errors
+    .filter((e): e is { row: number; column: string; message: string } => !!e && typeof e === "object" && typeof (e as { message?: unknown }).message === "string")
+    .map((e) => `row ${e.row} · ${e.column}: ${e.message}`);
+  const total = typeof d.total === "number" ? d.total : lines.length;
+  return { lines: lines.slice(0, max), more: Math.max(0, total - Math.min(lines.length, max)) };
 }
 
 export interface DiffCounts {

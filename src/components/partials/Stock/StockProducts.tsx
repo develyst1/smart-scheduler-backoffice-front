@@ -5,13 +5,13 @@ import { Badge, Button, Card, Group, Table, Tabs, Text } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { Plus } from "lucide-react";
 import ProductFormModal from "./ProductFormModal";
-import { useAllStockProducts, useCreateStockProduct, useUpdateStockProduct } from "./StockData";
+import { useAllStockProducts, useCreateStockProduct, useRevenueCategories, useUpdateStockProduct } from "./StockData";
 import { bahtText } from "./stock-picker-logic";
 import { categoriesOf, commissionText, filterByCategory } from "./stock-product-logic";
 import { useRole } from "@/context/RoleContext";
 import { ErrorState, LoadingState, errorMessage } from "@/components/partials/Salary/parts";
 import { PageTitle, notifyOk } from "@/components/partials/Salary/PeopleParts";
-import type { StockProduct, StockProductInput } from "@/types/app/stock";
+import type { RevenueCategory, StockProduct, StockProductInput } from "@/types/app/stock";
 
 /**
  * SALES › Product (STOCK; CEO + Admin) — the product list (final-ui `stock/Product.tsx`): a category tab bar, then MODEL CODE · CATEGORY · PRODUCT NAME · COMMISSION · PRICE · UNIT · ACTIVE, with Add / Edit.
@@ -20,10 +20,16 @@ import type { StockProduct, StockProductInput } from "@/types/app/stock";
  */
 export function StockProductsBody({
   products,
+  revenueCategories = [],
+  canWrite = true,
   onCreate,
   onUpdate,
 }: {
   products: StockProduct[];
+  /** for the form's REVENUE CATEGORY select */
+  revenueCategories?: RevenueCategory[];
+  /** the real create / edit routes are the CEO's alone: an Admin sees the list, no Add / Edit (hidden, never disabled-and-teasing) */
+  canWrite?: boolean;
   onCreate: (input: StockProductInput) => Promise<void>;
   onUpdate: (id: string, input: StockProductInput) => Promise<void>;
 }) {
@@ -37,9 +43,11 @@ export function StockProductsBody({
       <PageTitle
         title="Product"
         actions={
-          <Button leftSection={<Plus size={16} />} onClick={() => setForm({ product: null })}>
-            Add product
-          </Button>
+          canWrite ? (
+            <Button leftSection={<Plus size={16} />} onClick={() => setForm({ product: null })}>
+              Add product
+            </Button>
+          ) : undefined
         }
       />
       <Card p="xs" mb="md">
@@ -93,9 +101,11 @@ export function StockProductsBody({
                   </Table.Td>
                   <Table.Td>{p.active ? "✓" : "—"}</Table.Td>
                   <Table.Td ta="right">
-                    <Button size="compact-xs" variant="subtle" onClick={() => setForm({ product: p })}>
-                      Edit
-                    </Button>
+                    {canWrite && (
+                      <Button size="compact-xs" variant="subtle" onClick={() => setForm({ product: p })}>
+                        Edit
+                      </Button>
+                    )}
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -123,6 +133,7 @@ export function StockProductsBody({
           key={form.product?.id ?? "new"}
           product={form.product}
           categories={cats}
+          revenueCategories={revenueCategories}
           defaultCategory={cat ?? undefined}
           onClose={() => setForm(null)}
           onSave={(input) => (form.product ? onUpdate(form.product.id, input) : onCreate(input))}
@@ -137,6 +148,7 @@ export default function StockProducts() {
   const q = useAllStockProducts(role);
   const create = useCreateStockProduct(role);
   const update = useUpdateStockProduct(role);
+  const revenue = useRevenueCategories(role);
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   if (!role || !q.data) return <LoadingState />;
   // A refusal shows its sentence (red toast) and is re-thrown so the form stays open.
@@ -147,12 +159,14 @@ export default function StockProducts() {
   return (
     <StockProductsBody
       products={q.data}
+      revenueCategories={revenue.data ?? []}
+      canWrite={role === "ceo"}
       onCreate={async (input) => {
         await create.mutateAsync(input).catch(fail);
         notifyOk(`Product added: ${input.name} (${input.category})`); // Porter: the back office is English-only
       }}
       onUpdate={async (id, input) => {
-        await update.mutateAsync({ id, patch: { name: input.name, category: input.category, priceSatang: input.priceSatang, commissionGroup: input.commissionGroup, active: input.active } }).catch(fail);
+        await update.mutateAsync({ id, patch: { name: input.name, category: input.category, priceSatang: input.priceSatang, commissionGroup: input.commissionGroup, active: input.active, ...(input.revenueCategoryId ? { revenueCategoryId: input.revenueCategoryId } : {}) } }).catch(fail);
         notifyOk(`Product saved: ${input.name}`);
       }}
     />

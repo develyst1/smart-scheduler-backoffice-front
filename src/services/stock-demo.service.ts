@@ -1,7 +1,8 @@
-// Stock DEMO — the data seam (TASK-918). Answers from a stateful fixture that behaves like Jason's TASK-915 routes (reason required, balances never below zero,
-// idempotent on `key`, history kept) until BB deploys; the wiring TASK swaps ONLY these bodies (`GET /v1/demo/stock`, `GET /v1/demo/movements`, `POST /v1/demo/{move,defect-in,delete,sites}`,
-// `PUT /v1/demo/sites/order`). No component imports the fixture. CEO and Admin only (a Coach gets 403: hide, never mask).
-import { ApiClientError } from "@/lib/api/client";
+// Stock DEMO — the data seam (TASK-918). WIRED to the live backoffice (BB 693627d, TASK-915): `STOCK_DEMO_SOURCE.demo` is "api"; the stateful fixture (which behaves like the routes: reason required,
+// balances never below zero, idempotent on `key`, history kept) stays behind it for the tests. No component imports the fixture. CEO and Admin only (a Coach gets 403 before any request).
+//   GET /v1/demo/stock → { sites, items }          GET /v1/demo/movements?from&to&limit → { items }        POST /v1/demo/{move,defect-in,delete} → { occurredOn, balances, movementsWritten, alreadyApplied? }
+//   POST /v1/demo/sites { name } → 201 site         PUT /v1/demo/sites/order { ids } → { ids }              errors: the envelope; 409 NEGATIVE_BALANCE details {itemId, siteId, name, resultingBalance}
+import { api, ApiClientError } from "@/lib/api/client";
 import { makeDemoFixture, type DemoFixtureStore } from "@/services/__fixtures__/stock-demo";
 import type { Role } from "@/types/app/roles";
 import type {
@@ -14,7 +15,17 @@ import type {
   DemoWriteResult,
 } from "@/types/app/stock-demo";
 
-export const STOCK_DEMO_SOURCE: "fixture" | "api" = "fixture";
+export const STOCK_DEMO_SOURCE: Record<"demo", "fixture" | "api"> = { demo: "api" };
+const live = () => STOCK_DEMO_SOURCE.demo === "api";
+
+/** The History window the screen asks for: the last 366 days ending today (Bangkok) — the route's own maximum span (365 days between the ends, both inclusive). */
+export function historyWindow(todayBangkok: string): { from: string; to: string } {
+  const d = new Date(`${todayBangkok}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 365);
+  return { from: d.toISOString().slice(0, 10), to: todayBangkok };
+}
+const bangkokToday = (): string => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+export const DEMO_HISTORY_LIMIT = 200;
 
 let store: DemoFixtureStore = makeDemoFixture();
 const applied = new Map<string, DemoWriteResult>();
@@ -66,16 +77,28 @@ const once = (key: string, run: () => DemoWriteResult): DemoWriteResult => {
 
 export async function getDemoStock(role: Role | null): Promise<DemoStock> {
   guard(role);
+  if (live()) {
+    const { data } = await api.get<Partial<DemoStock>>("/v1/demo/stock");
+    return { sites: Array.isArray(data?.sites) ? data.sites : [], items: Array.isArray(data?.items) ? data.items : [] };
+  }
   return structuredClone({ sites: [...store.sites].sort((a, b) => a.sortOrder - b.sortOrder), items: store.items });
 }
 
 export async function listDemoMovements(role: Role | null): Promise<DemoMovement[]> {
   guard(role);
+  if (live()) {
+    const { data } = await api.get<{ items?: DemoMovement[] }>("/v1/demo/movements", { params: { ...historyWindow(bangkokToday()), limit: DEMO_HISTORY_LIMIT } });
+    return Array.isArray(data?.items) ? data.items : [];
+  }
   return structuredClone(store.history);
 }
 
 export async function moveDemo(i: DemoMoveInput, role: Role | null): Promise<DemoWriteResult> {
   guard(role);
+  if (live()) {
+    const { data } = await api.post<DemoWriteResult>("/v1/demo/move", { key: i.key, itemId: i.itemId, fromSiteId: i.fromSiteId, toSiteId: i.toSiteId, qty: i.qty, reason: i.reason.trim() });
+    return data;
+  }
   checkCommon(i.key, i.qty, i.reason);
   if (i.fromSiteId === i.toSiteId) throw bad("ต้นทางและปลายทางต้องไม่ซ้ำกัน", "toSiteId");
   return once(`move:${i.key}`, () => {
@@ -95,6 +118,10 @@ export async function moveDemo(i: DemoMoveInput, role: Role | null): Promise<Dem
 /** «Defect Product → Demo»: a plain +qty at a site. Nothing leaves sale stock (DECISIONS row 22). */
 export async function defectInDemo(i: DemoDefectInput, role: Role | null): Promise<DemoWriteResult> {
   guard(role);
+  if (live()) {
+    const { data } = await api.post<DemoWriteResult>("/v1/demo/defect-in", { key: i.key, itemId: i.itemId, toSiteId: i.toSiteId, qty: i.qty, reason: i.reason.trim() });
+    return data;
+  }
   checkCommon(i.key, i.qty, i.reason);
   return once(`defect:${i.key}`, () => {
     const it = itemOf(i.itemId);
@@ -109,6 +136,12 @@ export async function defectInDemo(i: DemoDefectInput, role: Role | null): Promi
 /** Partial (siteId + qty) takes pieces off one site; whole (neither) zeroes every site and deactivates the item. The history stays either way. */
 export async function deleteDemo(i: DemoDeleteInput, role: Role | null): Promise<DemoWriteResult> {
   guard(role);
+  if (live()) {
+    // partial = siteId + qty together; whole = neither (the server refuses only one of them with a 400)
+    const body = { key: i.key, itemId: i.itemId, reason: i.reason.trim(), ...(i.siteId !== undefined ? { siteId: i.siteId } : {}), ...(i.qty !== undefined ? { qty: i.qty } : {}) };
+    const { data } = await api.post<DemoWriteResult>("/v1/demo/delete", body);
+    return data;
+  }
   checkCommon(i.key, i.qty, i.reason);
   if ((i.siteId === undefined) !== (i.qty === undefined)) throw bad("ส่ง siteId และ qty มาด้วยกัน หรือไม่ส่งทั้งคู่ (ลบทั้งรายการ)", "qty");
   return once(`delete:${i.key}`, () => {
@@ -140,6 +173,10 @@ export async function deleteDemo(i: DemoDeleteInput, role: Role | null): Promise
 /** A new location, appended last. A name that exists (case-insensitive) is a 409 DUPLICATE_SITE. */
 export async function addDemoSite(name: string, role: Role | null): Promise<DemoSite> {
   guard(role);
+  if (live()) {
+    const { data } = await api.post<DemoSite>("/v1/demo/sites", { name: name.trim() });
+    return data;
+  }
   const n = name.trim();
   if (!n || n.length > 60) throw bad("ชื่อสถานที่ต้องไม่ว่างและไม่เกิน 60 ตัวอักษร", "name");
   if (store.sites.some((s) => s.name.toLowerCase() === n.toLowerCase())) throw new ApiClientError("DUPLICATE_SITE", `มีสถานที่ «${n}» อยู่แล้ว`, 409, { name: n });
@@ -152,6 +189,10 @@ export async function addDemoSite(name: string, role: Role | null): Promise<Demo
 /** The whole list of site ids, in the new left-to-right order (exactly the active sites, no repeats). */
 export async function orderDemoSites(ids: string[], role: Role | null): Promise<string[]> {
   guard(role);
+  if (live()) {
+    const { data } = await api.put<{ ids?: string[] }>("/v1/demo/sites/order", { ids });
+    return Array.isArray(data?.ids) ? data.ids : ids;
+  }
   if (ids.length !== store.sites.length || new Set(ids).size !== ids.length || ids.some((id) => !store.sites.some((s) => s.id === id))) throw bad("ids ต้องเป็นสถานที่ทั้งหมด ไม่ซ้ำ", "ids");
   ids.forEach((id, idx) => {
     siteOf(id).sortOrder = idx + 1;

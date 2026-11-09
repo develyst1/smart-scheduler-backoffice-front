@@ -30,6 +30,14 @@ export interface StockProductInput {
   commissionGroup: string | null;
   active: boolean;
   openingQuantity?: number;
+  /** the revenue category the product's sales post to: REQUIRED on create (the real route answers 400 without it — a product with none is born un-sellable); an edit may change it, never clear it */
+  revenueCategoryId?: string;
+}
+/** One of the product form's revenue categories (`GET /v1/stock/revenue-categories`: active categories of the product types; names, no money). */
+export interface RevenueCategory {
+  id: string;
+  type: string;
+  name: string;
 }
 /** An edit changes everything except the Model code (its identity) and the balance. */
 export type StockProductPatch = Partial<Omit<StockProductInput, "code" | "openingQuantity">>;
@@ -88,6 +96,18 @@ export interface StockInResult {
 
 /** TASK-913 (REQ-120 R3.7) — the Low Stock alert level per TYPE (a product's category): a whole number ≥ 0, or null = no alert for that type. The real store is a later BE task (fixture until then). */
 export type LowStockThresholds = Record<string, number | null>;
+
+/** One row of `GET /v1/stock/low-stock` → `{ items }`: an ACTIVE product whose balance is at or under the level of its category (exact name). No money. */
+export interface LowStockRow {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  quantity: number;
+  threshold: number;
+  /** threshold − quantity (0 when exactly at the level) */
+  under: number;
+}
 
 /** A row of the Stock Out cart STUB: the picked product and a quantity (the real cart — discount, buyer, commission — is a later TASK). */
 export interface CartStubRow {

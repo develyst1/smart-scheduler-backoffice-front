@@ -1,16 +1,32 @@
 // TASK-929 — Stock Report: the Sales History + Balance tabs (the fixture seam; the real reads are TASK-928's `/v1/stock/sales` and 904's products).
 // Run: `bun test src/components/partials/StockReport`. Each test names the code whose removal makes it fail.
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test as bunTest } from "bun:test";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MantineProvider } from "@mantine/core";
-import { listStockBalances, listStockMovements, listStockSales } from "@/services/stock-report.service";
-import { listStockProducts, resetStockFixture } from "@/services/stock.service";
+import { STOCK_REPORT_SOURCE, listStockBalances, listStockMovements, listStockSales } from "@/services/stock-report.service";
+import { STOCK_SOURCE, listStockProducts, resetStockFixture } from "@/services/stock.service";
 import { BalanceTable, MovementTable, SalesTable } from "./StockReport";
 import { ALL_CUSTOMERS, customerLabel, customerOptions, paymentWord } from "./sales-logic";
 
 const ui = (el: React.ReactElement) => renderToStaticMarkup(<MantineProvider>{el}</MantineProvider>);
 afterEach(() => resetStockFixture());
+
+// These tests read the FIXTURE branch (the shipped switches are "api"): each flips them and puts them back. The API branch is in stock-report-wire.test.tsx.
+const test = (name: string, fn: () => void | Promise<void>) =>
+  bunTest(name, async () => {
+    const before = { ...STOCK_REPORT_SOURCE, products: STOCK_SOURCE.products };
+    STOCK_REPORT_SOURCE.movements = "fixture";
+    STOCK_REPORT_SOURCE.sales = "fixture";
+    STOCK_SOURCE.products = "fixture";
+    try {
+      await fn();
+    } finally {
+      STOCK_REPORT_SOURCE.movements = before.movements;
+      STOCK_REPORT_SOURCE.sales = before.sales;
+      STOCK_SOURCE.products = before.products;
+    }
+  });
 
 describe("Sales History", () => {
   test("the period is inclusive at both ends and newest first", async () => {

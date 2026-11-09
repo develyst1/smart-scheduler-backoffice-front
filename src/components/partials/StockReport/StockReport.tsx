@@ -7,7 +7,7 @@ import { useStockBalances, useStockMovements, useStockSales } from "./StockRepor
 import { ALL_CUSTOMERS, customerLabel, customerOptions, paymentWord } from "./sales-logic";
 import { MAX_PERIOD_DAYS, periodOf, periodProblem, type Period, type PeriodPreset } from "./period";
 import { useRole } from "@/context/RoleContext";
-import { STOCK_REPORT_SOURCE } from "@/services/stock-report.service";
+import { stockReportIsSample } from "@/services/stock-report.service";
 import { EmptyState, ErrorState, LoadingState } from "@/components/partials/RevenueLedger/parts";
 import { fmtDate, todayBangkok } from "@/components/partials/RevenueLedger/labels";
 import { STOCK_MOVEMENT_TYPES, type StockBalanceRow, type StockMovementRow, type StockMovementType, type StockReportTab, type StockSaleRow } from "@/types/app/stock-report";
@@ -143,7 +143,7 @@ export default function StockReport() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Stock Report</h1>
-      {STOCK_REPORT_SOURCE === "fixture" && (
+      {stockReportIsSample() && (
         <Alert color="yellow" variant="light" data-sample-notice>
           Sample data — the live stock movements are connected with TASK-904.
         </Alert>

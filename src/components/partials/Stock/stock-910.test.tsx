@@ -12,10 +12,14 @@ import { StockOutSellBody, refusalText } from "./StockOutSell";
 import type { StockOutRequest, StockProduct } from "@/types/app/stock";
 
 const realAdapter = api.defaults.adapter;
+STOCK_SOURCE.products = "fixture"; // these tests run on the fixture (the shipped switches are "api"; the API branch is in stock-910-wire.test.tsx)
+STOCK_SOURCE.out = "fixture";
 afterEach(() => {
   resetStockFixture();
   api.defaults.adapter = realAdapter;
   STOCK_SOURCE.sellers = "api";
+  STOCK_SOURCE.products = "fixture";
+  STOCK_SOURCE.out = "fixture";
 });
 function stub(answer: (c: InternalAxiosRequestConfig) => { status: number; data: unknown }) {
   const seen: InternalAxiosRequestConfig[] = [];
@@ -183,8 +187,8 @@ describe("the fixture write seam (sellStockOut)", () => {
     expect(rows.some((r) => r.name === "No Teacher")).toBe(false);
     expect(STOCK_SOURCE.sellers).toBe("api"); // the default: the route is live (TASK-886)
   });
-  test("the write is behind the fixture switch (off until 909 deploys), and the sell screen imports no fixture", () => {
-    expect(STOCK_SOURCE.writes).toBe("fixture");
+  test("the write is on the API switch (shipped \"api\", read from the service's source), and the sell screen imports no fixture", () => {
+    expect(readFileSync("src/services/stock.service.ts", "utf8")).toContain('out: "api"');
     for (const f of ["StockOutSell.tsx", "stock-out-logic.ts"]) expect(readFileSync(`src/components/partials/Stock/${f}`, "utf8")).not.toContain("__fixtures__");
   });
 });

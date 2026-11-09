@@ -2,12 +2,20 @@
 // (ceo+admin, optional `?q=`, Sober's shape); it stays OFF until 904 is deployed: flip `STOCK_SOURCE.products` to "api" (one word).
 // The WRITES (TASK-907: create / edit a product) have no route defined yet (Sober: do not invent the write shape), so they live on the fixture only: `STOCK_SOURCE.writes`.
 // No component imports the fixture.
-import { api } from "@/lib/api/client";
+import { api, ApiClientError } from "@/lib/api/client";
 import { STOCK_PRODUCTS_FIXTURE } from "@/services/__fixtures__/stock";
 import type { Role } from "@/types/app/roles";
-import type { NegativeBalanceBody, Seller, StockInRequest, StockInResult, StockOutRequest, StockOutResult, StockProduct, StockProductInput, StockProductPatch } from "@/types/app/stock";
+import type { NegativeBalanceBody, Seller, StockInRequest, StockInResult, StockOutRequest, StockOutResult, RevenueCategory, StockProduct, StockProductInput, StockProductPatch } from "@/types/app/stock";
 
-export const STOCK_SOURCE: { products: "fixture" | "api"; writes: "fixture"; sellers: "fixture" | "api" } = { products: "fixture", writes: "fixture", sellers: "api" };
+/** Flipped per screen, never globally (the back office is on sid since BB 693627d). `products` is wired (TASK-904 read); the writes are wired one screen at a time (TASK-907 / 910 / 912 / 913). */
+export const STOCK_SOURCE: Record<"products" | "productWrites" | "out" | "stockIn" | "lowStock" | "sellers", "fixture" | "api"> = {
+  products: "api",
+  productWrites: "api",
+  out: "api",
+  stockIn: "api",
+  lowStock: "api",
+  sellers: "api",
+};
 
 // The fixture is a session-long in-memory store, so an add / edit on the Product page round-trips (the list reads it back).
 let store: StockProduct[] | null = null;
@@ -32,7 +40,8 @@ export async function listStockProducts(role: Role, q?: string, opts: { includeI
   const keep = (p: StockProduct) => opts.includeInactive || p.active;
   if (STOCK_SOURCE.products === "api") {
     const { data } = await api.get<StockProduct[]>("/v1/stock/products", { params: q ? { q } : undefined });
-    return (Array.isArray(data) ? data : []).filter(keep).sort(byName);
+    // the real route answers `category: null` for a product with no category tag; the screens read a string
+    return (Array.isArray(data) ? data : []).map((p) => ({ ...p, category: p.category ?? "" })).filter(keep).sort(byName);
   }
   return structuredClone(fixtureRows().filter(keep).sort(byName));
 }
@@ -52,9 +61,73 @@ export class StockWriteError extends Error {
   }
 }
 
-/** FIXTURE ONLY (TASK-907): add a product; the balance starts at `openingQuantity` (0 when none). CEO and Admin. */
+/** The real routes' refusals (the app envelope) in the screens' own English sentences — the BB's messages are Thai, the back office is English-only. */
+const WRITE_ERRORS: Record<string, [StockWriteError["code"], string | null]> = {
+  DUPLICATE_CODE: ["CODE_EXISTS", "Model code already exists"],
+  UNKNOWN_ITEM: ["NOT_FOUND", "Product not found"],
+  UNKNOWN_REVENUE_CATEGORY: ["INVALID", "Revenue category not found"],
+  ITEM_INACTIVE: ["INVALID", "This product is inactive"],
+  NO_REVENUE_CATEGORY: ["INVALID", "This product has no revenue category — set it on the Product page first"],
+  METHOD_REQUIRED: ["METHOD_REQUIRED", "Payment method is required"],
+  FORBIDDEN: ["FORBIDDEN", "Not allowed"],
+  VALIDATION: ["INVALID", null], // null ⇒ the server's own sentence
+};
+/** Re-throw a real route's refusal as a `StockWriteError` (anything else — a network failure, a 5xx — passes through untouched). */
+export function asStockWriteError(e: unknown): never {
+  if (e instanceof ApiClientError) {
+    const hit = WRITE_ERRORS[e.code];
+    if (hit) throw new StockWriteError(hit[0], hit[1] ?? e.message);
+    if (e.status === 403) throw new StockWriteError("FORBIDDEN", "Not allowed");
+  }
+  throw e;
+}
+
+/** The product the real create / edit routes answer (`ProductDTO`: price and balance may be null) as the screens read it. */
+const fromWire = (p: Omit<StockProduct, "category" | "priceSatang" | "quantity"> & { category: string | null; priceSatang: number | null; quantity: number | null }): StockProduct => ({
+  ...p,
+  category: p.category ?? "",
+  priceSatang: p.priceSatang ?? 0,
+  quantity: p.quantity ?? 0,
+});
+
+/** The product form's revenue categories: `GET /v1/stock/revenue-categories` → `{ categories: [{ id, type, name }] }` (CEO; an Admin never writes a product, so gets none). */
+export async function listRevenueCategories(role: Role): Promise<RevenueCategory[]> {
+  if (role !== "ceo") return [];
+  if (STOCK_SOURCE.productWrites === "api") {
+    const { data } = await api.get<{ categories: RevenueCategory[] }>("/v1/stock/revenue-categories");
+    return Array.isArray(data?.categories) ? data.categories : [];
+  }
+  return [
+    { id: "rc-sales", type: "SALES", name: "Equipment sales" },
+    { id: "rc-fnb", type: "FNB", name: "Food & beverage" },
+    { id: "rc-rent", type: "RENT", name: "Rental" },
+  ];
+}
+
+/**
+ * Add a product (TASK-907): `POST /v1/stock/products` — the CEO's alone on the real route. The balance starts at `openingQuantity` (0 when none), as ONE opening movement.
+ * `revenueCategoryId` is required (the route answers 400 without it). Refusals come back as `StockWriteError` (DUPLICATE_CODE ⇒ CODE_EXISTS …).
+ */
 export async function createStockProduct(role: Role, input: StockProductInput): Promise<StockProduct> {
-  if (role === "coach") throw new StockWriteError("FORBIDDEN", "Not allowed");
+  if (role !== "ceo") throw new StockWriteError("FORBIDDEN", "Not allowed");
+  if (STOCK_SOURCE.productWrites === "api") {
+    const body = {
+      code: input.code.trim(),
+      name: input.name.trim(),
+      category: input.category.trim() || null,
+      priceSatang: input.priceSatang,
+      commissionGroup: input.commissionGroup,
+      active: input.active,
+      openingQuantity: input.openingQuantity ?? 0,
+      revenueCategoryId: input.revenueCategoryId,
+    };
+    try {
+      const { data } = await api.post<Parameters<typeof fromWire>[0]>("/v1/stock/products", body);
+      return fromWire(data);
+    } catch (e) {
+      return asStockWriteError(e);
+    }
+  }
   const rows = fixtureRows();
   if (rows.some((p) => p.code.toLowerCase() === input.code.trim().toLowerCase())) throw new StockWriteError("CODE_EXISTS", "Model code already exists");
   const created: StockProduct = {
@@ -71,9 +144,25 @@ export async function createStockProduct(role: Role, input: StockProductInput): 
   return structuredClone(created);
 }
 
-/** FIXTURE ONLY (TASK-907): edit a product — everything but its Model code and its balance. CEO and Admin. */
+/** Edit a product (TASK-907): `PATCH /v1/stock/products/:id` (CEO) — everything but its Model code and its balance; only the fields given are sent. */
 export async function updateStockProduct(role: Role, id: string, patch: StockProductPatch): Promise<StockProduct> {
-  if (role === "coach") throw new StockWriteError("FORBIDDEN", "Not allowed");
+  if (role !== "ceo") throw new StockWriteError("FORBIDDEN", "Not allowed");
+  if (STOCK_SOURCE.productWrites === "api") {
+    const body = {
+      ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
+      ...(patch.category !== undefined ? { category: patch.category.trim() || null } : {}),
+      ...(patch.priceSatang !== undefined ? { priceSatang: patch.priceSatang } : {}),
+      ...(patch.commissionGroup !== undefined ? { commissionGroup: patch.commissionGroup } : {}),
+      ...(patch.active !== undefined ? { active: patch.active } : {}),
+      ...(patch.revenueCategoryId !== undefined ? { revenueCategoryId: patch.revenueCategoryId } : {}),
+    };
+    try {
+      const { data } = await api.patch<Parameters<typeof fromWire>[0]>(`/v1/stock/products/${encodeURIComponent(id)}`, body);
+      return fromWire(data);
+    } catch (e) {
+      return asStockWriteError(e);
+    }
+  }
   const row = fixtureRows().find((p) => p.id === id);
   if (!row) throw new StockWriteError("NOT_FOUND", "Product not found");
   Object.assign(row, {
@@ -87,8 +176,7 @@ export async function updateStockProduct(role: Role, id: string, patch: StockPro
 }
 
 // ───────────────────────── TASK-910: Stock OUT (the sell write) ─────────────────────────
-// FIXTURE ONLY until TASK-909 deploys (`STOCK_SOURCE.writes = "fixture"`): the real seam is `POST /v1/stock/out` with exactly this request / result, and `409 NEGATIVE_BALANCE { error, model, name, resultingBalance }`.
-// (The BF's `ApiClientError` does not carry a response body, so the real branch needs the body read added when 909 lands — that is why it is not written blind here.)
+// Wired to `POST /v1/stock/out` (`STOCK_SOURCE.out`); `ApiClientError.details` carries the 409's `{ model, name, resultingBalance }`.
 const sales = new Map<string, StockOutResult>();
 
 /** The refusal of a sale whose line would drive a balance below 0: the WHOLE sale is refused, nothing is written. */
@@ -109,11 +197,24 @@ export class NegativeBalanceError extends Error {
 }
 
 /**
- * FIXTURE ONLY: sell a cart. CEO and Admin. Atomic: every line is checked against the balance FIRST; one that would go below 0 refuses the whole sale (nothing written, balances unchanged).
- * Idempotent on `idempotencyKey`: the same key again writes nothing and answers the first result with `alreadyApplied: true`. The answer carries NO totals (R0).
+ * Sell a cart: `POST /v1/stock/out` (TASK-909; CEO and Admin). Atomic on the server: every line is checked against the balance FIRST; one that would go below 0 refuses the whole sale
+ * (409 NEGATIVE_BALANCE, `error.details = { model, name, resultingBalance }`, nothing written). Idempotent on `idempotencyKey`: the same key again writes nothing and answers the first result with `alreadyApplied: true`.
+ * The answer carries NO totals (R0). `method` is required (400 METHOD_REQUIRED without it). A fixture twin runs when `STOCK_SOURCE.out = "fixture"`.
  */
 export async function sellStockOut(role: Role, req: StockOutRequest): Promise<StockOutResult> {
   if (role === "coach") throw new StockWriteError("FORBIDDEN", "Not allowed");
+  if (STOCK_SOURCE.out === "api") {
+    try {
+      const { data } = await api.post<StockOutResult>("/v1/stock/out", req);
+      return data;
+    } catch (e) {
+      if (e instanceof ApiClientError && e.code === "NEGATIVE_BALANCE") {
+        const d = (e.details ?? {}) as { model?: unknown; name?: unknown; resultingBalance?: unknown };
+        throw new NegativeBalanceError(String(d.model ?? ""), String(d.name ?? ""), Number(d.resultingBalance ?? 0));
+      }
+      return asStockWriteError(e);
+    }
+  }
   // 909 answers 400 METHOD_REQUIRED without a payment method (the revenue line's method is NOT NULL)
   if (!(["TRANSFER", "CASH", "CARD"] as const).includes(req.method)) throw new StockWriteError("METHOD_REQUIRED", "Payment method is required");
   const first = sales.get(req.idempotencyKey);
@@ -151,7 +252,7 @@ export async function listSellers(role: Role): Promise<Seller[]> {
 }
 
 // ───────────────────────── TASK-912: Stock IN (the receive write) ─────────────────────────
-// FIXTURE ONLY until the BE stock-in write (TASK-911) deploys (`STOCK_SOURCE.writes = "fixture"`): the real seam is `POST /v1/stock/in` with exactly this request / result.
+// Wired to `POST /v1/stock/in` (TASK-911; `STOCK_SOURCE.stockIn`) with exactly this request / result.
 const receipts = new Map<string, StockInResult>();
 
 /**
@@ -160,6 +261,16 @@ const receipts = new Map<string, StockInResult>();
  */
 export async function receiveStock(role: Role, req: StockInRequest): Promise<StockInResult> {
   if (role === "coach") throw new StockWriteError("FORBIDDEN", "Not allowed");
+  if (STOCK_SOURCE.stockIn === "api") {
+    // the same screen rule as the fixture: nothing is sent for an empty cart or a quantity that is not a whole number above 0
+    if (req.lines.length === 0 || req.lines.some((l) => !Number.isInteger(l.qty) || l.qty <= 0)) throw new StockWriteError("INVALID", "Quantity must be a whole number above 0");
+    try {
+      const { data } = await api.post<StockInResult>("/v1/stock/in", req);
+      return data;
+    } catch (e) {
+      return asStockWriteError(e);
+    }
+  }
   const first = receipts.get(req.idempotencyKey);
   if (first) return { ...first, alreadyApplied: true };
   if (req.lines.length === 0 || req.lines.some((l) => !Number.isInteger(l.qty) || l.qty <= 0)) throw new StockWriteError("INVALID", "Quantity must be a whole number above 0");
@@ -173,24 +284,52 @@ export async function receiveStock(role: Role, req: StockInRequest): Promise<Sto
 }
 
 // ───────────────────────── TASK-913: Low Stock thresholds ─────────────────────────
-// FIXTURE ONLY (`STOCK_SOURCE.writes = "fixture"`): a tiny in-memory store of the alert level per type; the real store is a later BE task. The Monday delivery is NOT here (a BE job tied to Notifications).
-import { DEFAULT_THRESHOLDS } from "@/components/partials/Stock/low-stock-logic";
-import type { LowStockThresholds } from "@/types/app/stock";
+// Wired to `/v1/stock/low-stock*` (TASK-919; `STOCK_SOURCE.lowStock`); a tiny in-memory twin runs when the switch is "fixture". The Monday delivery is NOT here (a BE job tied to Notifications).
+import { DEFAULT_THRESHOLDS, lowProducts } from "@/components/partials/Stock/low-stock-logic";
+import type { LowStockRow, LowStockThresholds } from "@/types/app/stock";
 
 let thresholds: LowStockThresholds | null = null;
 const thresholdRows = (): LowStockThresholds => (thresholds ??= { ...DEFAULT_THRESHOLDS });
 
-/** The alert level per type (R3.7 defaults until someone edits them). CEO and Admin; a Coach gets nothing. */
+/**
+ * The low-stock list: `GET /v1/stock/low-stock` → `{ items }` (CEO and Admin; no money). The server applies the rule (active products, the exact category's level, ≤ the level).
+ * The fixture twin computes the same rule from the fixture products and thresholds.
+ */
+export async function listLowStock(role: Role): Promise<LowStockRow[]> {
+  if (role === "coach") return [];
+  if (STOCK_SOURCE.lowStock === "api") {
+    const { data } = await api.get<{ items: LowStockRow[] }>("/v1/stock/low-stock");
+    return Array.isArray(data?.items) ? data.items : [];
+  }
+  return lowProducts(fixtureRows(), thresholdRows()).map((l) => ({ id: l.product.id, code: l.product.code, name: l.product.name, category: l.product.category, quantity: l.product.quantity, threshold: l.threshold, under: l.under }));
+}
+
+/** The alert level per type (R3.7; the server's defaults until someone edits them): `GET /v1/stock/low-stock/thresholds` → `{ thresholds }`. CEO and Admin; a Coach gets nothing. */
 export async function getLowStockThresholds(role: Role): Promise<LowStockThresholds> {
   if (role === "coach") return {};
+  if (STOCK_SOURCE.lowStock === "api") {
+    const { data } = await api.get<{ thresholds: LowStockThresholds }>("/v1/stock/low-stock/thresholds");
+    return data?.thresholds && typeof data.thresholds === "object" ? data.thresholds : {};
+  }
   return { ...thresholdRows() };
 }
 
-/** FIXTURE ONLY: save the whole map. Each value is null (no alert) or a whole number ≥ 0 — anything else is refused (`INVALID`, the standard envelope). CEO and Admin. */
+/**
+ * Save the whole map: `PUT /v1/stock/low-stock/thresholds` with `{ thresholds }` → `{ thresholds }` (CEO and Admin). Each value is null (no alert) or a whole number ≥ 0 — anything else is refused
+ * on the screen's side first (`INVALID`, nothing sent) and by the route (400 VALIDATION with the issues).
+ */
 export async function setLowStockThresholds(role: Role, next: LowStockThresholds): Promise<LowStockThresholds> {
   if (role === "coach") throw new StockWriteError("FORBIDDEN", "Not allowed");
   for (const [key, v] of Object.entries(next)) {
     if (!key.trim() || (v !== null && (!Number.isInteger(v) || v < 0))) throw new StockWriteError("INVALID", `Alert (Unit) of ${key} must be a whole number, 0 or more`);
+  }
+  if (STOCK_SOURCE.lowStock === "api") {
+    try {
+      const { data } = await api.put<{ thresholds: LowStockThresholds }>("/v1/stock/low-stock/thresholds", { thresholds: next });
+      return data?.thresholds ?? next;
+    } catch (e) {
+      return asStockWriteError(e);
+    }
   }
   thresholds = { ...next };
   return { ...thresholds };

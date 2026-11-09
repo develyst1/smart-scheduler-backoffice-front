@@ -12,8 +12,9 @@ export const STOCK_IMPORT_ROWS: ImportDiffRow[] = [
     model: "ANI-HEL-020",
     name: "Animal helmet — S",
     kind: "field_change",
-    before: snap("Animal helmet — S", 790, 9, { category: "Safety", commissionGroup: { name: "Animal Helmet", amountSatang: baht(40) } }),
-    after: snap("Animal helmet — S", 850, 9, { category: "Helmets", commissionGroup: { name: "Animal Helmet", amountSatang: baht(50) } }),
+    // like the real preview: a field_change carries only the fields that changed
+    before: { priceSatang: baht(790), category: "Safety", commissionGroup: "Animal Helmet" },
+    after: { priceSatang: baht(850), category: "Helmets", commissionGroup: "Animal Helmet Pro" },
     delta: null,
   },
   { model: "FB-WAT-070", name: "Water 600 ml", kind: "field_change", before: snap("Water 600 ml", 20, 8), after: snap("Water 600 ml (cold)", 25, 8), delta: null },

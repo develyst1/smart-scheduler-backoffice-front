@@ -6,7 +6,7 @@ import { useRole } from "@/context/RoleContext";
 import { formatBaht } from "@/components/partials/Salary/money";
 import { errorMessage } from "@/components/partials/Salary/parts";
 import { useApplyImport, usePreviewImport } from "./hooks";
-import { countDiff, fieldDeltas, groupByKind, isStaleBatch, negativeBalanceDetails, signedQty, KIND_LABEL, type FieldDelta } from "./import-logic";
+import { countDiff, fieldDeltas, groupByKind, isStaleBatch, negativeBalanceDetails, sheetProblems, signedQty, KIND_LABEL, type FieldDelta } from "./import-logic";
 import type { ImportDiffRow, ImportKind, ImportPreview, ImportResult } from "@/types/app/stock-import";
 
 const KIND_COLOR: Record<ImportKind, string> = { new: "green", qty_change: "orange", field_change: "blue", removed: "gray" };
@@ -15,37 +15,53 @@ const FIELD_LABEL: Record<FieldDelta["field"], string> = { name: "Name", priceSa
 
 const baht = (satang: number | undefined | null) => (typeof satang === "number" ? `${formatBaht(satang)} ฿` : "—");
 
+const showField = (field: FieldDelta["field"], v: string | number | null): string => {
+  if (field === "priceSatang") return baht(v as number);
+  return v === null || v === "" ? "none" : String(v);
+};
+
+/** The name / price / category / commission-group edits of a row (a quantity change can carry them too). The real preview lists only the fields that changed. */
+function FieldEdits({ row }: { row: ImportDiffRow }) {
+  const d = fieldDeltas(row.before, row.after);
+  // a change the preview cannot show as before/after (the sheet's note) still counts as an edit: say so, never leave the cell empty
+  if (d.length === 0 && row.kind === "field_change") {
+    return (
+      <Text span c="dimmed" data-other-edit>
+        Other details (e.g. the note) updated
+      </Text>
+    );
+  }
+  return (
+    <Stack gap={2}>
+      {d.map((f) => (
+        <span key={f.field} data-field-change>
+          {FIELD_LABEL[f.field]}: {showField(f.field, f.before)} → {showField(f.field, f.after)}
+        </span>
+      ))}
+    </Stack>
+  );
+}
+
 function Change({ row }: { row: ImportDiffRow }) {
   if (row.kind === "qty_change") {
     return (
-      <span className="tabular-nums">
-        {row.before?.quantity ?? "—"} → {row.after?.quantity ?? "—"}{" "}
-        <b data-delta>{row.delta === null ? "" : signedQty(row.delta)}</b>
-      </span>
-    );
-  }
-  if (row.kind === "field_change") {
-    const d = fieldDeltas(row.before, row.after);
-    const show = (field: FieldDelta["field"], v: string | number | null, snap: ImportDiffRow["before"]) => {
-      if (field === "priceSatang") return baht(v as number);
-      if (field === "commissionGroup") return snap?.commissionGroup ? `${snap.commissionGroup.name} (${baht(snap.commissionGroup.amountSatang)})` : "none";
-      return v === null || v === "" ? "none" : String(v);
-    };
-    return (
       <Stack gap={2}>
-        {d.map((f) => (
-          <span key={f.field} data-field-change>
-            {FIELD_LABEL[f.field]}: {show(f.field, f.before, row.before)} → {show(f.field, f.after, row.after)}
-          </span>
-        ))}
+        <span className="tabular-nums">
+          {row.before?.quantity ?? "—"} → {row.after?.quantity ?? "—"}{" "}
+          <b data-delta>{row.delta === null ? "" : signedQty(row.delta)}</b>
+        </span>
+        <FieldEdits row={row} />
       </Stack>
     );
   }
+  if (row.kind === "field_change") return <FieldEdits row={row} />;
   if (row.kind === "new") {
     return (
       <span className="tabular-nums">
         {baht(row.after?.priceSatang)} · opening {row.after?.quantity ?? 0}
-        {row.delta !== null ? <b data-delta> {signedQty(row.delta)}</b> : null}
+        {row.delta ? <b data-delta> {signedQty(row.delta)}</b> : null}
+        {row.after?.category ? ` · ${row.after.category}` : ""}
+        {row.after?.commissionGroup ? ` · ${row.after.commissionGroup}` : ""}
       </span>
     );
   }
@@ -104,11 +120,16 @@ export function DiffBody({ preview }: { preview: ImportPreview }) {
       {(preview.flags ?? []).length > 0 && (
         <Alert color="yellow" title="Check before confirming" data-flags>
           <Stack gap={2}>
-            {(preview.flags ?? []).map((f) => (
-              <span key={f}>{f}</span>
+            {(preview.flags ?? []).map((f, i) => (
+              <span key={`${i}-${f}`}>{f}</span>
             ))}
           </Stack>
         </Alert>
+      )}
+      {typeof preview.unchanged === "number" && preview.unchanged > 0 && (
+        <Text size="sm" c="dimmed" data-unchanged>
+          {preview.unchanged} row{preview.unchanged === 1 ? "" : "s"} of the sheet already match the stock (not listed).
+        </Text>
       )}
       {preview.notImported.length > 0 && (
         <Text size="sm" c="dimmed" data-not-imported>
@@ -184,7 +205,15 @@ export default function StockImport() {
         </Group>
         {preview.isError && (
           <Alert color="red" mt="md" data-preview-error>
-            {errorMessage(preview.error)}
+            <Stack gap={2}>
+              <span>{errorMessage(preview.error)}</span>
+              {sheetProblems(preview.error).lines.map((l) => (
+                <span key={l} data-sheet-problem>
+                  {l}
+                </span>
+              ))}
+              {sheetProblems(preview.error).more > 0 && <span>… and {sheetProblems(preview.error).more} more</span>}
+            </Stack>
           </Alert>
         )}
       </Card>

@@ -1,11 +1,11 @@
 // TASK-918 — Stock DEMO on the fixture seam (it behaves like TASK-915's routes). Run: `bun test src/components/partials/StockDemo`.
 // Each test names the code whose removal makes it fail.
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test as bunTest } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MantineProvider } from "@mantine/core";
 import { ApiClientError } from "@/lib/api/client";
 import { canOpen, menuFor } from "@/lib/roles/pages";
-import { addDemoSite, defectInDemo, deleteDemo, getDemoStock, listDemoMovements, moveDemo, orderDemoSites, resetStockDemoFixture } from "@/services/stock-demo.service";
+import { STOCK_DEMO_SOURCE, addDemoSite, defectInDemo, deleteDemo, getDemoStock, listDemoMovements, moveDemo, orderDemoSites, resetStockDemoFixture } from "@/services/stock-demo.service";
 import { DemoHistory, DemoMatrix } from "./StockDemo";
 import { MSG, checkForm, demoNegativeDetails, newWriteKey, orderedSites, siteNameOk, swapIds, totalOf } from "./demo-logic";
 
@@ -15,6 +15,18 @@ const fail = (p: Promise<unknown>) => p.then(() => null, (e) => e as ApiClientEr
 
 // the fixture starts clean in a fresh process; every test puts it back after itself
 afterEach(() => resetStockDemoFixture());
+
+// The shipped switch is "api" (wired to the live backoffice). These tests read the FIXTURE branch, so each flips it and puts it back; the API branch is in stock-demo-wire.test.tsx.
+const test = (name: string, fn: () => void | Promise<void>) =>
+  bunTest(name, async () => {
+    const before = STOCK_DEMO_SOURCE.demo;
+    STOCK_DEMO_SOURCE.demo = "fixture";
+    try {
+      await fn();
+    } finally {
+      STOCK_DEMO_SOURCE.demo = before;
+    }
+  });
 
 describe("the matrix", () => {
   test("sites run left to right by sortOrder (Bravo first) and the Total column sums the row", async () => {
