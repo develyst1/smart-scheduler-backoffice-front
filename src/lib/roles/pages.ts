@@ -1,8 +1,8 @@
 // Who may open which page (SPEC-097 §4; the model of final-ui/src/shell/registry.ts). The menu, the page gate and each role's home are all drawn from this one table.
-import { Banknote, BarChart3, BellRing, Boxes, CalendarDays, FileText, LayoutDashboard, PieChart, Package, PackagePlus, Presentation, Receipt, Settings, ShieldCheck, ShoppingCart, Tags, Upload, UserRound, Users, type LucideIcon } from "lucide-react";
+import { Banknote, BarChart3, BellRing, Boxes, CalendarDays, FileText, KeyRound, LayoutDashboard, PieChart, Package, PackagePlus, Presentation, Receipt, Settings, ShieldCheck, ShoppingCart, Tags, Upload, UserRound, Users, type LucideIcon } from "lucide-react";
 import { isRole, type Role } from "@/types/app/roles";
 
-export type Group = "REPORTS" | "REVENUE" | "ITEMS" | "SALARY" | "STOCK" | "NOTIFICATION";
+export type Group = "REPORTS" | "REVENUE" | "ITEMS" | "SALARY" | "STOCK" | "NOTIFICATION" | "SETTING";
 
 export interface PageRule {
   /** first path segment is the route: "/revenue" covers "/revenue/…" too */
@@ -30,7 +30,10 @@ export const PAGE_RULES: PageRule[] = [
   { href: "/stock/low", label: "Low Stock", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: BellRing },
   // 🔻 TASK-914 (Team B, lent to Team A): NOTIFICATION — the settings (who is told what, CEO only: an Admin never changes it) and the web feed (CEO + Admin). Fixtures until a backend store exists.
   { href: "/notify/settings", label: "Notification Setting", group: "NOTIFICATION", roles: ["ceo"], menu: true, icon: ShieldCheck },
-  { href: "/notify/inbox", label: "Notification Alert", group: "NOTIFICATION", roles: ["ceo", "admin"], menu: true, icon: BellRing },  // 🔻 TASK-905 / 🔻 TASK-910 (Team B, lent to Team A's Stock block): STOCK OUT, the sell page (CEO + Admin). One row; the page is the product picker + search, the cart (qty · discount · commission), the seller pick and Save.
+  { href: "/notify/inbox", label: "Notification Alert", group: "NOTIFICATION", roles: ["ceo", "admin"], menu: true, icon: BellRing },
+  // 🔻 TASK-931 (R0.1; final-ui «User Setting»): who can sign in — Admit a login · Deactivate · Reactivate. CEO ONLY (an admin or a coach never manages logins). Fixture until TASK-930's `/v1/users` is deployed.
+  { href: "/users", label: "User Setting", group: "SETTING", roles: ["ceo"], menu: true, icon: KeyRound },
+  // 🔻 TASK-905 / 🔻 TASK-910 (Team B, lent to Team A's Stock block): STOCK OUT, the sell page (CEO + Admin). One row; the page is the product picker + search, the cart (qty · discount · commission), the seller pick and Save.
   { href: "/stock/out", label: "STOCK OUT", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: ShoppingCart },
   // 🔻 TASK-906 (Team A's Stock block; final-ui registry): the Stock Report, CEO + Admin, no amounts on it. Shows sample data until TASK-904's reader is wired.
   { href: "/stock/reports", label: "Stock Report", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: Boxes },
