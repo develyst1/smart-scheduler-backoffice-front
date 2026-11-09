@@ -30,7 +30,15 @@ export function useCreatePeriod() {
 
 export function useRunPeriod() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: svc.runPeriod, onSuccess: () => qc.invalidateQueries({ queryKey: ROOT }) });
+  return useMutation({
+    mutationFn: svc.runPeriod,
+    onSuccess: () => {
+      // A re-run adds, updates AND removes auto lines. Drop every cached slip so no line the run removed can flash back from the cache
+      // (an invalidation alone would show the old copy first); the overview and period list are refetched.
+      qc.removeQueries({ queryKey: [...ROOT, "slip"] });
+      return qc.invalidateQueries({ queryKey: ROOT });
+    },
+  });
 }
 
 export function useLockPeriod() {
@@ -52,6 +60,27 @@ export function useRemoveLine(slipId: string) {
     mutationFn: (lineId: string) => svc.removeLine(slipId, lineId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ROOT }),
   });
+}
+
+// ---- TASK-882 ----
+export function useMySlip(year: number, month: number) {
+  return useQuery({ queryKey: [...ROOT, "my-slip", year, month], queryFn: () => svc.getMySlip(year, month) });
+}
+
+export function useEntryPeople() {
+  return useQuery({ queryKey: [...ROOT, "entry-people"], queryFn: svc.listEntryPeople });
+}
+
+export function useCreateEntry() {
+  return useMutation({ mutationFn: svc.createEntry });
+}
+
+export function useTransportSchools() {
+  return useQuery({ queryKey: [...ROOT, "transport-schools"], queryFn: svc.listTransportSchools });
+}
+
+export function useCreateTrip() {
+  return useMutation({ mutationFn: svc.createTrip });
 }
 
 export function useExportCsv() {

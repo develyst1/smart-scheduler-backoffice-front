@@ -86,6 +86,50 @@ export interface CreateLineInput {
   remark?: string;
 }
 
+/** TASK-890 `POST /eca`: one school payment = ONE ECA revenue line (amount = price × students × classes, counted on `paidOn`). */
+export interface CreateEcaPaymentInput {
+  /** An ECA category = the school. */
+  categoryId: string;
+  /** The term, 1–40 characters (the line's product name). */
+  term: string;
+  pricePerClassMinor: number;
+  students: number;
+  classesPerTerm: number;
+  paidOn: string;
+  branch?: RevenueBranch;
+  method?: RevenueMethod;
+}
+
+/** TASK-893 `GET /refunds/sources?q=` item (SPEC-099 §10): a sale a refund can be written against. */
+export interface RefundSource {
+  refType: "COURSE" | "VOUCHER";
+  refId: string;
+  label: string;
+  soldOn: string;
+  feeMinor: number;
+  /** Sessions already attended (kept). */
+  attended: number;
+  /** Sessions a refund will cancel. */
+  toCancel: number;
+  /** A refund already exists for this sale (one refund per sale). */
+  refunded: boolean;
+}
+
+/** TASK-893 `POST /refunds`. `amountMinor` is positive here; the API writes the REFUND line as its negative. */
+export interface CreateRefundInput {
+  refType: RefundSource["refType"];
+  refId: string;
+  refundedOn: string;
+  amountMinor: number;
+  method: RevenueMethod;
+  remark?: string;
+}
+
+export interface RefundResult {
+  line: RevenueLine;
+  cancelledSessions: number;
+}
+
 export interface ListLinesParams {
   from: string;
   to: string;

@@ -38,6 +38,40 @@ export function useCreateRevenueCategory() {
   });
 }
 
+/** TASK-894: the refund pick list (server-side search). */
+export function useRefundSources(q: string) {
+  return useQuery({
+    queryKey: [...ROOT, "refund-sources", q],
+    queryFn: () => svc.listRefundSources(q),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** TASK-894: one refund. It changes the sources (refunded flag), the lines list and every summary block. */
+export function useCreateRefund() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: svc.createRefund,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...ROOT, "refund-sources"] });
+      qc.invalidateQueries({ queryKey: [...ROOT, "lines"] });
+      qc.invalidateQueries({ queryKey: [...ROOT, "summary"] });
+    },
+  });
+}
+
+/** TASK-891: one ECA school payment. A new line changes the history (the lines list) and every summary block. */
+export function useCreateEcaPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: svc.createEcaPayment,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...ROOT, "lines"] });
+      qc.invalidateQueries({ queryKey: [...ROOT, "summary"] });
+    },
+  });
+}
+
 export function useCreateRevenueLine() {
   const qc = useQueryClient();
   return useMutation({

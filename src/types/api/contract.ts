@@ -6,5 +6,7 @@ export interface ApiError {
   error: {
     code: string;
     message: string;
+    /** extra facts of the failure (e.g. NEGATIVE_BALANCE: `{model, name, resultingBalance}`); absent on most errors */
+    details?: unknown;
   };
 }

@@ -1,8 +1,8 @@
 // Who may open which page (SPEC-097 §4; the model of final-ui/src/shell/registry.ts). The menu, the page gate and each role's home are all drawn from this one table.
-import { Banknote, BarChart3, Boxes, FileText, LayoutDashboard, PieChart, Tags, type LucideIcon } from "lucide-react";
+import { Banknote, BarChart3, BellRing, Boxes, CalendarDays, FileText, LayoutDashboard, PieChart, Package, PackagePlus, Presentation, Receipt, Settings, ShieldCheck, ShoppingCart, Tags, Upload, UserRound, Users, type LucideIcon } from "lucide-react";
 import { isRole, type Role } from "@/types/app/roles";
 
-export type Group = "REPORTS" | "REVENUE" | "ITEMS" | "SALARY";
+export type Group = "REPORTS" | "REVENUE" | "ITEMS" | "SALARY" | "STOCK" | "NOTIFICATION";
 
 export interface PageRule {
   /** first path segment is the route: "/revenue" covers "/revenue/…" too */
@@ -22,12 +22,43 @@ export const PAGE_RULES: PageRule[] = [
   { href: "/revenue", label: "รายได้แยกตามกิจกรรม", group: "REVENUE", roles: ["ceo"], money: true, menu: true, icon: PieChart },
   { href: "/items", label: "รายการ (Items)", group: "ITEMS", roles: ["ceo", "admin"], menu: true, icon: Boxes },
   { href: "/tags", label: "แท็ก", group: "ITEMS", roles: ["ceo", "admin"], menu: true, icon: Tags },
-  { href: "/salary", label: "Pay run (เงินเดือน)", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: Banknote }, // covers /salary/payrun + /salary/slip/[id] (TASK-866)
-  { href: "/my-slip", label: "สลิปของฉัน", group: "SALARY", roles: ["coach"], money: true, menu: true, icon: FileText },
+  // 🔻 TASK-907 (Team B, lent to Team A's Stock block): Product — the list, category tabs, add / edit (CEO + Admin). One row, first in STOCK (the final UI's order: Product, …, STOCK OUT).
+  { href: "/stock/products", label: "Product", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: Package },
+  // 🔻 TASK-912 (Team B, lent to Team A's Stock block): STOCK IN, a manual receive — product + quantity + date, no cost / price (CEO + Admin). One row.
+  { href: "/stock/in", label: "STOCK IN", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: PackagePlus },
+  // 🔻 TASK-913 (Team B, lent to Team A's Stock block): LOW STOCK, the products at / under their type's alert level + the editable level per type (CEO + Admin). One row.
+  { href: "/stock/low", label: "Low Stock", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: BellRing },
+  // 🔻 TASK-914 (Team B, lent to Team A): NOTIFICATION — the settings (who is told what, CEO only: an Admin never changes it) and the web feed (CEO + Admin). Fixtures until a backend store exists.
+  { href: "/notify/settings", label: "Notification Setting", group: "NOTIFICATION", roles: ["ceo"], menu: true, icon: ShieldCheck },
+  { href: "/notify/inbox", label: "Notification Alert", group: "NOTIFICATION", roles: ["ceo", "admin"], menu: true, icon: BellRing },
+  // 🔻 TASK-905 / 🔻 TASK-910 (Team B, lent to Team A's Stock block): STOCK OUT, the sell page (CEO + Admin). One row; the page is the product picker + search, the cart (qty · discount · commission), the seller pick and Save.
+  { href: "/stock/out", label: "STOCK OUT", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: ShoppingCart },
+  // 🔻 TASK-906 (Team A's Stock block; final-ui registry): the Stock Report, CEO + Admin, no amounts on it. Shows sample data until TASK-904's reader is wired.
+  { href: "/stock/reports", label: "Stock Report", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: Boxes },
+  // Stock git-style import (BF half of TASK-904): upload → diff → confirm. CEO only. Shows fixture data until 904 is wired.
+  { href: "/stock/import", label: "Stock import", group: "STOCK", roles: ["ceo"], menu: true, icon: Upload },
+  // 🔻 TASK-918 (Team A's Stock block; final-ui registry): Stock Demo (R3.6), CEO + Admin. No money on it. Fixture until TASK-915's routes are wired.
+  { href: "/stock/demo", label: "Stock Demo", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: Presentation },
+  // TASK-862 (Team B; final-ui's registry): Employee (CEO · Admin — the Base salary column is the CEO's), its hidden profile page, Payment Setting and the Daily Training Report (CEO).
+  // They MUST stay above the `/salary` row (first match wins — it is also what gives each page its title). `/salary/person` is guarded but not in the menu.
+  { href: "/salary/people", label: "Employee", group: "SALARY", roles: ["ceo", "admin"], menu: true, icon: Users },
+  { href: "/salary/person", label: "Employee Profile", group: "SALARY", roles: ["ceo", "admin"], icon: UserRound },
+  { href: "/salary/settings", label: "Payment Setting", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: Settings },
+  // TASK-866 / final-ui order (Employee · Payment Setting · Monthly Payment · … · Daily): an explicit pay-run row, above Daily, so the CEO's SALARY menu matches the final UI.
+  { href: "/salary/payrun", label: "Pay run (เงินเดือน)", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: Banknote },
+  { href: "/salary/daily", label: "Daily Training Report", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: CalendarDays },
+  // TASK-923 (R1.8): the month-end Salary Report (Teaching · Pay + Excel). CEO only; above the `/salary` row.
+  { href: "/salary/reports", label: "Salary Report", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: BarChart3 },
+  // TASK-882 (final-ui's registry): the coach's own slip and the admin-blind Entries. These MUST stay above the `/salary` row (first match wins).
+  { href: "/salary/my-slip", label: "Payment Detail", group: "SALARY", roles: ["coach"], money: true, menu: true, icon: FileText },
+  { href: "/salary/entries", label: "Other Income", group: "SALARY", roles: ["admin"], menu: true, icon: Receipt },
+  { href: "/salary", label: "Pay run (เงินเดือน)", group: "SALARY", roles: ["ceo"], money: true, icon: Banknote }, // covers /salary/slip/[id] and the bare /salary redirect (TASK-866); the menu item is the /salary/payrun row above
+  { href: "/my-slip", label: "สลิปของฉัน", group: "SALARY", roles: ["coach"], money: true, icon: FileText }, // the Phase-1 placeholder: still guarded, no longer in the menu (TASK-882)
   { href: "/payroll", label: "ครู / Payroll", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
   { href: "/ftpt-salary", label: "เงินเดือน FT/PT", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
   { href: "/freelance-budgets", label: "งบ Freelance", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
-  { href: "/reports", label: "รายงาน", group: "REPORTS", roles: ["ceo"], money: true, icon: BarChart3 },
+  // 🔻 TASK-925 (SPEC-103 §1): All Report — CEO + Admin. No `money` flag on purpose: the money rule lives in the API (a money key is ABSENT for an admin), so the screens show none.
+  { href: "/reports", label: "All Report", group: "REPORTS", roles: ["ceo", "admin"], menu: true, icon: BarChart3 },
   { href: "/wallet", label: "Wallet", group: "ITEMS", roles: ["ceo", "admin"], icon: Boxes },
   { href: "/inventory", label: "Inventory", group: "ITEMS", roles: ["ceo", "admin"], icon: Boxes },
 ];

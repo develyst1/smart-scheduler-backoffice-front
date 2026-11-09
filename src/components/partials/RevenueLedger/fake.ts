@@ -4,7 +4,11 @@ import { ApiClientError } from "@/lib/api/client";
 import {
   REVENUE_TYPES,
   type CreateCategoryInput,
+  type CreateEcaPaymentInput,
   type CreateLineInput,
+  type CreateRefundInput,
+  type RefundResult,
+  type RefundSource,
   type ListCategoriesParams,
   type ListLinesParams,
   type ListLinesResult,
@@ -49,7 +53,8 @@ const ROWS: Row[] = [
   ["t04", "2026-10-16", "BRAVO", "VOUCHER", "10 Hr", "Voucher 10 Hr — น้องภูมิ", 8400, "TRANSFER", "Whole amount on the CONFIRM date"],
   ["t05", "2026-10-16", "BRAVO", "COURSE", "Balance Camp", "Balance Camp, week 1 — น้องมะลิ", 4500, "TRANSFER", "Counted on the “Confirm camp” date"],
   ["t06", "2026-10-16", "BRAVO", "COURSE", "Birthday", "Birthday party (Other booking)", 6000, "TRANSFER", "Typed by hand"],
-  ["t07", "2026-10-16", "BRAVO", "ECA", "STA", "STA term 2", 36000, "TRANSFER", "400 ฿ × 18 students × 5 classes"],
+  ["t07", "2026-10-16", "BRAVO", "ECA", "STA", "Term 2", 36000, "TRANSFER", "400 ฿ × 18 students × 5 classes"],
+  ["e01", "2026-10-30", "BRAVO", "ECA", "RIS", "Term 2", 28800, "TRANSFER", "320 ฿ × 18 students × 5 classes"],
   ["t08", "2026-10-16", "BRAVO", "RENT", "EQUIPMENT", "Equipment rent — hall, 2 hours", 1500, "CASH", "From the Rental booking"],
   ["t09", "2026-10-16", "BRAVO", "RENT", "PARK", "Park fee (Other booking, teacher “No Teacher”)", 800, "CASH", "Charges and blocks the timetable"],
   ["t10", "2026-10-16", "BRAVO", "SALES", "Miller", "Miller inline skate — Seaworld", 3510, "TRANSFER", "From STOCK OUT · 10 % off this item"],
@@ -152,6 +157,87 @@ export async function fakeCreateLine(input: CreateLineInput): Promise<RevenueLin
   };
   lines.unshift(made);
   return { ...made };
+}
+
+// TASK-891 / TASK-890 (`POST /eca`): ONE ECA line = price × students × classes, counted on `paidOn`. Same refusals as the API.
+const INT32_MAX = 2147483647;
+export async function fakeCreateEca(input: CreateEcaPaymentInput): Promise<RevenueLine> {
+  await delay();
+  const cat = categories.find((c) => c.id === input.categoryId);
+  if (!cat || cat.type !== "ECA" || !cat.active) {
+    throw new ApiClientError("VALIDATION", "categoryId must be an active ECA category", 400);
+  }
+  const term = input.term.trim();
+  if (term.length < 1 || term.length > 40) throw new ApiClientError("VALIDATION", "term must be 1–40 characters", 400);
+  if (![input.pricePerClassMinor, input.students, input.classesPerTerm].every((n) => Number.isInteger(n) && n > 0)) {
+    throw new ApiClientError("VALIDATION", "price, students and classes must be whole numbers above 0", 400);
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.paidOn)) throw new ApiClientError("VALIDATION", "paidOn must be YYYY-MM-DD", 400);
+  const amountMinor = input.pricePerClassMinor * input.students * input.classesPerTerm;
+  if (amountMinor > INT32_MAX) throw new ApiClientError("VALIDATION", "the total is too large", 400);
+  const baht = (input.pricePerClassMinor / 100).toLocaleString("en-US");
+  const made: RevenueLine = {
+    id: `eca${lines.length + 1}`,
+    occurredOn: input.paidOn,
+    branch: input.branch ?? "BRAVO",
+    type: "ECA",
+    categoryId: cat.id,
+    categoryName: cat.name,
+    productName: term,
+    amountMinor,
+    method: input.method ?? "TRANSFER",
+    remark: `${baht} ฿ × ${input.students} students × ${input.classesPerTerm} classes`,
+    source: "ECA",
+    createdAt: new Date().toISOString(),
+  };
+  lines.unshift(made);
+  return { ...made };
+}
+
+// TASK-894 / TASK-893 (`GET /refunds/sources`, `POST /refunds`). The sources are the final UI's two (a course and a voucher) plus three that
+// exercise the errors: one already refunded, one the API refuses at save (409), one whose scheduler call fails (502), one not configured (503).
+const sources: RefundSource[] = [
+  { refType: "COURSE", refId: "r-c1", label: "Inline Private 10 Hr — น้องข้าวหอม", soldOn: "2026-09-15", feeMinor: 950000, attended: 6, toCancel: 4, refunded: false },
+  { refType: "VOUCHER", refId: "r-v1", label: "Voucher 10 Hr — น้องภูมิ", soldOn: "2026-10-02", feeMinor: 840000, attended: 3, toCancel: 7, refunded: false },
+  { refType: "COURSE", refId: "r-c2", label: "Skateboard Duo 10 Hr — น้องใบบัว (already refunded)", soldOn: "2026-08-20", feeMinor: 1100000, attended: 10, toCancel: 0, refunded: true },
+  { refType: "COURSE", refId: "r-c3", label: "Bike Private 6 Hr — น้องมะลิ (fake: refunded elsewhere, 409 on save)", soldOn: "2026-10-10", feeMinor: 649000, attended: 1, toCancel: 5, refunded: false },
+  { refType: "COURSE", refId: "r-c4", label: "Surfskate Private 10 Hr — น้องพีพี (fake: scheduler down, 502 on save)", soldOn: "2026-10-12", feeMinor: 950000, attended: 2, toCancel: 8, refunded: false },
+  { refType: "VOUCHER", refId: "r-v2", label: "Voucher 5 Hr — น้องมีมี่ (fake: not configured, 503 on save)", soldOn: "2026-10-14", feeMinor: 450000, attended: 0, toCancel: 5, refunded: false },
+];
+
+export async function fakeListRefundSources(q: string): Promise<RefundSource[]> {
+  await delay();
+  const needle = q.trim().toLowerCase();
+  return sources.filter((s) => !needle || s.label.toLowerCase().includes(needle)).slice(0, 20).map((s) => ({ ...s }));
+}
+
+export async function fakeCreateRefund(input: CreateRefundInput): Promise<RefundResult> {
+  await delay(500);
+  const src = sources.find((s) => s.refType === input.refType && s.refId === input.refId);
+  if (!src) throw new ApiClientError("NOT_FOUND", "sale not found", 404);
+  if (!(Number.isInteger(input.amountMinor) && input.amountMinor > 0 && input.amountMinor <= src.feeMinor)) {
+    throw new ApiClientError("VALIDATION", "the refund must be above 0 and not more than the fee", 400);
+  }
+  if (src.refunded || input.refId === "r-c3") throw new ApiClientError("ALREADY_REFUNDED", "this sale has already been refunded", 409);
+  if (input.refId === "r-v2") throw new ApiClientError("NOT_CONFIGURED", "the scheduler link is not configured", 503);
+  if (input.refId === "r-c4") throw new ApiClientError("SCHEDULER_ERROR", "the scheduler did not answer", 502);
+  src.refunded = true;
+  const line: RevenueLine = {
+    id: `rf${lines.length + 1}`,
+    occurredOn: input.refundedOn,
+    branch: "BRAVO",
+    type: "REFUND",
+    categoryId: null,
+    categoryName: null,
+    productName: `Refund: ${src.label}`,
+    amountMinor: -input.amountMinor,
+    method: input.method,
+    remark: input.remark?.trim() || null,
+    source: "REFUND",
+    createdAt: new Date().toISOString(),
+  };
+  lines.unshift(line);
+  return { line: { ...line }, cancelledSessions: src.toCancel };
 }
 
 export async function fakeListLines(p: ListLinesParams): Promise<ListLinesResult> {

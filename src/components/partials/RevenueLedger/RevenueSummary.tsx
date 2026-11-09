@@ -5,7 +5,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { Badge, Button, Card, Group, Select, Stack, Table, Tabs, Text } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
-import { FileText, Plus } from "lucide-react";
+import { FileText, GraduationCap, Plus, Undo2 } from "lucide-react";
 import { useRevenueSummary } from "./hooks";
 import { BRANCH_LABEL, TYPE_LABEL, TypeBadge, fmtDate, money, todayBangkok } from "./labels";
 import { EmptyState, ErrorState, LoadingState, PageHeader } from "./parts";
@@ -72,6 +72,8 @@ export default function RevenueSummary() {
         title="Summary"
         actions={[
           { href: "/revenue/detail", label: "Detail", icon: <FileText size={16} /> },
+          { href: "/revenue/refund", label: "Refund", icon: <Undo2 size={16} /> },
+          { href: "/revenue/eca", label: "ECA Payment", icon: <GraduationCap size={16} /> },
           { href: "/revenue/manual", label: "Add Manually", icon: <Plus size={16} />, primary: true },
         ]}
       />

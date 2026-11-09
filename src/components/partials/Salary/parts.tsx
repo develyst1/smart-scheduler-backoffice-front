@@ -15,6 +15,10 @@ export function isLocked(error: unknown): boolean {
   return error instanceof ApiClientError && error.status === 409 && error.code === "LOCKED";
 }
 
+export function isPeriodExists(error: unknown): boolean {
+  return error instanceof ApiClientError && error.status === 409 && error.code === "PERIOD_EXISTS";
+}
+
 export function LoadingState() {
   return (
     <Center h={200} role="status" aria-label="กำลังโหลด">

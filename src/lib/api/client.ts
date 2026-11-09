@@ -7,6 +7,8 @@ export class ApiClientError extends Error {
     public code: string,
     message: string,
     public status: number,
+    /** the envelope's `error.details`, when the server sent any */
+    public details?: unknown,
   ) {
     super(message);
     this.name = "ApiClientError";
@@ -43,7 +45,7 @@ api.interceptors.response.use(
     }
     const body = error.response?.data as ApiError | undefined;
     if (body?.error) {
-      throw new ApiClientError(body.error.code, body.error.message, error.response.status);
+      throw new ApiClientError(body.error.code, body.error.message, error.response.status, body.error.details);
     }
     throw error;
   },

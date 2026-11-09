@@ -8,16 +8,26 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { Download, Lock, Play, Plus } from "lucide-react";
 import { useCreatePeriod, useExportCsv, useLockPeriod, useOverview, usePeriods, useRunPeriod } from "./hooks";
-import { csvName, formatBaht, formatInstant, periodLabel, rangeLabel, toSatang } from "./money";
-import { ErrorState, LoadingState, PeriodStatusBadge, SlipStatusBadge, errorMessage } from "./parts";
-import type { PayPeriod } from "@/types/app/salary";
+import { csvName, formatBaht, formatInstant, periodLabel, rangeLabel, shortDate, toSatang } from "./money";
+import { ErrorState, LoadingState, PeriodStatusBadge, SlipStatusBadge, errorMessage, isPeriodExists } from "./parts";
+import type { PayPeriod, RunResult, RunWarning } from "@/types/app/salary";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({
   value: String(i + 1),
   label: new Date(Date.UTC(2000, i, 15)).toLocaleDateString("th-TH-u-ca-gregory", { month: "long", timeZone: "Asia/Bangkok" }),
 }));
 
-const byNewest = (a: PayPeriod, b: PayPeriod) => b.year * 12 + b.month - (a.year * 12 + a.month);
+const CLASS_LABEL: Record<string, string> = { private: "Private", duo: "Duo", group: "Group", eca: "ECA", camp: "Camp" };
+
+/** "สลิปใหม่ 1 · อัปเดต 2 · รายการอัตโนมัติ: เพิ่ม 3 · แก้ 1 · ลบ 1" — only what the BE reported; no autoLines ⇒ it says nothing changed. */
+function runSummary(r: RunResult): string {
+  const auto = r.autoLines
+    ? `รายการอัตโนมัติ: เพิ่ม ${r.autoLines.inserted} · แก้ ${r.autoLines.updated} · ลบ ${r.autoLines.removed}`
+    : "รายการอัตโนมัติไม่เปลี่ยน";
+  return `Run แล้ว: สลิปใหม่ ${r.created} · อัปเดต ${r.refreshed} · ${auto}`;
+}
+
+const byNewest =(a: PayPeriod, b: PayPeriod) => b.year * 12 + b.month - (a.year * 12 + a.month);
 
 /** Pay run / month overview (SPEC-100 §6.1): pick or create a month → Run → people + totals → Lock → Export. */
 export default function PayRun() {
@@ -60,10 +70,38 @@ export default function PayRun() {
     return { base, total };
   }, [slips]);
 
+  // What the last Run did, kept on screen (a toast vanishes; a missing-rate warning must not). Tied to its period.
+  // Kept in sessionStorage per period: opening a slip and coming back (or a reload) must not hide a missing-rate warning. The BE sends
+  // `warnings` only in the run response, so this is "as of the last Run" until the overview carries them (asked in TASK-881 ## Questions).
+  const [last, setLast] = useState<{ periodId: string; result: RunResult } | null>(null);
+  const stored = useMemo<RunResult | null>(() => {
+    if (!periodId) return null;
+    try {
+      const raw = sessionStorage.getItem(`salary-last-run:${periodId}`);
+      return raw ? (JSON.parse(raw) as RunResult) : null;
+    } catch {
+      return null;
+    }
+  }, [periodId, last]);
+  const lastHere = last && last.periodId === periodId ? last.result : stored;
+  const nameOf = useMemo(() => new Map(slips.map((s) => [s.teacherId, s.teacherName || s.teacherId])), [slips]);
+  const warningsByTeacher = useMemo(() => {
+    const m = new Map<string, RunWarning[]>();
+    for (const w of lastHere?.warnings ?? []) m.set(w.teacherId, [...(m.get(w.teacherId) ?? []), w]);
+    return [...m.entries()];
+  }, [lastHere]);
+
   const runNow = () =>
     run.mutate(periodId as string, {
-      onSuccess: (r) =>
-        notifications.show({ color: "green", message: `Run แล้ว: สร้างสลิปใหม่ ${r.created} · อัปเดต ${r.refreshed}` }),
+      onSuccess: (r) => {
+        try {
+          sessionStorage.setItem(`salary-last-run:${periodId}`, JSON.stringify(r));
+        } catch {
+          /* storage unavailable: the banner still shows for this visit */
+        }
+        setLast({ periodId: periodId as string, result: r });
+        notifications.show({ color: "green", message: runSummary(r) });
+      },
     });
 
   const lockNow = () =>
@@ -104,11 +142,21 @@ export default function PayRun() {
                 allowDeselect={false}
                 w={260}
               />
-              <Select label="เดือน" data={MONTHS} value={newMonth} onChange={setNewMonth} allowDeselect={false} w={150} />
+              <Select label="เดือน" data={MONTHS} value={newMonth}
+                onChange={(v) => {
+                  setNewMonth(v);
+                  create.reset();
+                }}
+                allowDeselect={false}
+                w={150}
+              />
               <NumberInput
                 label="ปี (ค.ศ.)"
                 value={newYear}
-                onChange={setNewYear}
+                onChange={(v) => {
+                  setNewYear(v);
+                  create.reset();
+                }}
                 min={2000}
                 max={2100}
                 allowDecimal={false}
@@ -120,8 +168,10 @@ export default function PayRun() {
               </Button>
             </Group>
             {create.isError && (
-              <Alert color="red" variant="light" mt="sm" role="alert">
-                {errorMessage(create.error)}
+              <Alert color="red" variant="light" mt="sm" role="alert" data-create-error>
+                {isPeriodExists(create.error)
+                  ? `มีงวด ${periodLabel({ year: Number(newYear), month: Number(newMonth) })} อยู่แล้ว — เลือกจากรายการ “งวดเงินเดือน” ด้านบนได้เลย`
+                  : errorMessage(create.error)}
               </Alert>
             )}
           </Card>
@@ -186,6 +236,26 @@ export default function PayRun() {
               {run.isError && (
                 <Alert color="red" variant="light" mb="sm" role="alert">
                   {errorMessage(run.error)}
+                </Alert>
+              )}
+              {lastHere && (
+                <Alert color="blue" variant="light" mb="sm" data-run-summary>
+                  {runSummary(lastHere).replace("Run แล้ว", "Run ล่าสุด")}
+                </Alert>
+              )}
+              {warningsByTeacher.length > 0 && (
+                <Alert color="yellow" variant="light" mb="sm" title="ยังไม่ได้ตั้งเรท Freelance — วันเหล่านี้ยังไม่ถูกคิดเงิน" data-run-warnings>
+                  <ul className="m-0 list-disc pl-5">
+                    {warningsByTeacher.map(([tid, ws]) => (
+                      <li key={tid}>
+                        <b>{nameOf.get(tid) ?? tid}</b>:{" "}
+                        {ws.map((w) => `${shortDate(w.date)} (${CLASS_LABEL[w.classType] ?? w.classType})`).join(" · ")}
+                      </li>
+                    ))}
+                  </ul>
+                  <Text fz="xs" mt={6}>
+                    ตั้งเรทของครูคนนั้นแล้วกด Run ใหม่ — ระบบจะเติมรายการให้เอง
+                  </Text>
                 </Alert>
               )}
               {locked && (

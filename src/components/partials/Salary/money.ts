@@ -36,6 +36,43 @@ export function periodLabel(p: Pick<PayPeriod, "year" | "month">): string {
   return new Date(Date.UTC(p.year, p.month - 1, 15)).toLocaleDateString(LOCALE, { month: "long", year: "numeric", timeZone: TZ });
 }
 
+/** Final-UI date format dd/mm/yy in Bangkok time: an instant or "YYYY-MM-DD" → "31/10/26". */
+export function fmtDate(v: string | Date): string {
+  const d = typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00Z`) : new Date(v);
+  if (Number.isNaN(d.getTime())) return "—";
+  const tz = typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? "UTC" : TZ;
+  const parts = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit", timeZone: tz }).formatToParts(d);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("day")}/${get("month")}/${get("year")}`;
+}
+
+/**
+ * The pay range of a month, as final-ui's `periodOf`: from the LAST day of the previous month to the day before the LAST day of this month
+ * (the rule Khwan agreed; the back's `payPeriodRange` is the same). The admin cannot read periods, so the Entries toast draws it from this.
+ */
+export function payRangeOf(year: number, month: number): string {
+  const lastOfPrev = new Date(Date.UTC(year, month - 1, 0));
+  const dayBeforeLast = new Date(Date.UTC(year, month, 0) - 86_400_000); // last day of `month`, minus one day
+  return `${fmtDate(lastOfPrev.toISOString().slice(0, 10))}–${fmtDate(dayBeforeLast.toISOString().slice(0, 10))}`;
+}
+
+/** "Oct 2026" — the ‹ month year › picker label (final-ui's `MMM YYYY`). */
+export function monthYearLabel(year: number, month: number): string {
+  return new Date(Date.UTC(year, month - 1, 15)).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+}
+
+/** The current month in Bangkok. */
+export function currentYearMonth(now: Date = new Date()): { year: number; month: number } {
+  const [y, m] = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: TZ }).format(now).split("-");
+  return { year: Number(y), month: Number(m) };
+}
+
+/** "2026-10-16" → "16 ต.ค." ; unreadable → the input as given. */
+export function shortDate(ymd: string): string {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? ymd : d.toLocaleDateString(LOCALE, { day: "numeric", month: "short", timeZone: "UTC" });
+}
+
 /** "31 ต.ค. – 29 พ.ย. 2026" from the period's inclusive YYYY-MM-DD range; "" when the BE sent none. */
 export function rangeLabel(p: Pick<PayPeriod, "periodStart" | "periodEnd">): string {
   const day = (s: string, withYear: boolean) => {

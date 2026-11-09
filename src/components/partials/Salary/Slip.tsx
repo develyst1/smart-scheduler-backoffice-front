@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ActionIcon, Alert, Button, Card, Group, NumberInput, Table, Text, TextInput } from "@mantine/core";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Alert, Button, Card, Group, NumberInput, Text, TextInput } from "@mantine/core";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useAddLine, useRemoveLine, useSlip } from "./hooks";
-import { bahtInputToSatang, formatBaht, formatInstant, formatSigned, periodLabel, rangeLabel, toSatang } from "./money";
+import { bahtInputToSatang, formatInstant, periodLabel, rangeLabel } from "./money";
+import SlipView from "./SlipView";
 import { ErrorState, LoadingState, PeriodStatusBadge, SlipStatusBadge, errorMessage, isLocked } from "./parts";
 
 type Field = "label" | "amount";
@@ -80,77 +81,14 @@ export default function Slip({ slipId }: { slipId: string }) {
             </Alert>
           )}
 
-          <Card mb="md">
-            <Table verticalSpacing="sm">
-              <Table.Tbody>
-                <Table.Tr>
-                  <Table.Td>เงินเดือนฐาน</Table.Td>
-                  <Table.Td ta="right" className="font-num" data-slip-base>
-                    {formatBaht(toSatang(data.baseAmount))}
-                  </Table.Td>
-                  <Table.Td w={44} />
-                </Table.Tr>
-
-                {lines.length === 0 && (
-                  <Table.Tr>
-                    <Table.Td colSpan={3}>
-                      <Text c="dimmed" fz="sm">
-                        ยังไม่มีรายการ Other ±
-                      </Text>
-                    </Table.Td>
-                  </Table.Tr>
-                )}
-                {lines.map((l) => {
-                  const s = toSatang(l.amount);
-                  return (
-                    <Table.Tr key={l.id} data-line={l.id}>
-                      <Table.Td>
-                        <Text span c="dimmed" fz="xs" mr={8}>
-                          Other ±
-                        </Text>
-                        {l.label}
-                      </Table.Td>
-                      <Table.Td
-                        ta="right"
-                        className="font-num"
-                        c={s !== null && s < 0 ? "red.4" : undefined}
-                        data-line-amount
-                      >
-                        {formatSigned(s)}
-                      </Table.Td>
-                      <Table.Td ta="right">
-                        {!locked && l.source === "manual" && (
-                          <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            aria-label={`ลบรายการ ${l.label}`}
-                            loading={remove.isPending && remove.variables === l.id}
-                            onClick={() => remove.mutate(l.id)}
-                          >
-                            <Trash2 size={16} />
-                          </ActionIcon>
-                        )}
-                      </Table.Td>
-                    </Table.Tr>
-                  );
-                })}
-              </Table.Tbody>
-              <Table.Tfoot>
-                <Table.Tr>
-                  <Table.Th>รวมสุทธิ</Table.Th>
-                  <Table.Th ta="right" className="font-num" fz="lg" data-slip-total>
-                    {formatBaht(toSatang(data.total))}
-                  </Table.Th>
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Tfoot>
-            </Table>
-            {remove.isError && (
-              <Alert color="red" variant="light" mt="sm" role="alert">
-                {errorMessage(remove.error)}
-              </Alert>
-            )}
-          </Card>
+          <SlipView
+            baseAmount={data.baseAmount}
+            lines={data.lines}
+            total={data.total}
+            onRemove={locked ? undefined : (id) => remove.mutate(id)}
+            removingId={remove.isPending ? (remove.variables ?? null) : null}
+            removeError={remove.isError ? remove.error : undefined}
+          />
 
           {!locked && (
             <Card>
