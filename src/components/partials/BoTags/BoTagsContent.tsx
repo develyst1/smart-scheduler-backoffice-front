@@ -47,7 +47,7 @@ export default function BoTagsContent() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Tags</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">แท็ก</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Tags</h1>
           <p className="mt-0.5 text-sm text-default-400">จัดกลุ่ม item ด้วยแท็ก (1 ค่า/กลุ่ม ต่อ item)</p>
         </div>
         <Button leftSection={<Plus size={16} />} color="orange" onClick={() => setGroupModal(true)}>

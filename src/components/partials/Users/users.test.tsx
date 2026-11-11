@@ -163,6 +163,16 @@ describe("the form rules", () => {
     expect(personName({ id: "a", username: "ton", role: "coach", teacherId: "zzz", active: true }, people)).toBe("zzz");
     expect(personName({ id: "a", username: "kung", role: "admin", teacherId: null, active: true }, people)).toBe("—");
   });
+
+  test("O-150-1: a name carried by the login row wins, so a coach missing from the people list (no active salary profile) still shows a name, not an id", () => {
+    const people = [{ teacherId: TON, name: "ต้น" }];
+    const coach = { id: "a", username: "nid", role: "coach" as const, teacherId: NID, active: true };
+    expect(personName(coach, people)).toBe(NID); // not in the people list, no name on the row: the id (the last resort)
+    expect(personName({ ...coach, teacherName: "พลอย" }, people)).toBe("พลอย"); // the row's own name
+    expect(personName({ ...coach, teacherName: "  " }, people)).toBe(NID); // a blank name is not a name
+    expect(personName({ ...coach, teacherId: TON, teacherName: "ต้น (แถว)" }, people)).toBe("ต้น (แถว)"); // the row's name beats the list's
+    expect(personName({ ...coach, teacherId: null, teacherName: "x" }, people)).toBe("—"); // no person, no name shown
+  });
 });
 
 describe("the list on screen", () => {

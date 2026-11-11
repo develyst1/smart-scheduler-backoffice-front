@@ -27,7 +27,7 @@ export default function DashboardContent() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Profit &amp; Loss</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">งบกำไร–ขาดทุน</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">P&L</h1>
           <p className="mt-0.5 text-sm text-default-400">รายรับ ลบ รายจ่าย จากทุกความเคลื่อนไหวของ item</p>
         </div>
         <DatePickerInput

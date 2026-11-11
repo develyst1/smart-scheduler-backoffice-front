@@ -38,7 +38,7 @@ export default function SlipView({ baseAmount, lines, total, onRemove, removingI
       <Table verticalSpacing="sm">
         <Table.Tbody>
           <Table.Tr>
-            <Table.Td>เงินเดือนฐาน</Table.Td>
+            <Table.Td>Base salary</Table.Td>
             <Table.Td ta="right" className="font-num" data-slip-base>
               {formatBaht(toSatang(baseAmount))}
             </Table.Td>
@@ -49,7 +49,7 @@ export default function SlipView({ baseAmount, lines, total, onRemove, removingI
             <Table.Tr>
               <Table.Td colSpan={3}>
                 <Text c="dimmed" fz="sm">
-                  ยังไม่มีรายการเพิ่ม / หัก
+                  No additions or deductions yet
                 </Text>
               </Table.Td>
             </Table.Tr>
@@ -72,7 +72,7 @@ export default function SlipView({ baseAmount, lines, total, onRemove, removingI
                     <ActionIcon
                       variant="subtle"
                       color="red"
-                      aria-label={`ลบรายการ ${l.label}`}
+                      aria-label={`Delete line ${l.label}`}
                       loading={removingId === l.id}
                       onClick={() => onRemove(l.id)}
                     >
@@ -86,7 +86,7 @@ export default function SlipView({ baseAmount, lines, total, onRemove, removingI
         </Table.Tbody>
         <Table.Tfoot>
           <Table.Tr>
-            <Table.Th>รวมสุทธิ</Table.Th>
+            <Table.Th>Net total</Table.Th>
             <Table.Th ta="right" className="font-num" fz="lg" data-slip-total>
               {formatBaht(toSatang(total))}
             </Table.Th>

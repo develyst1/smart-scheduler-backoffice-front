@@ -29,25 +29,25 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-default-200 bg-content1/80 px-4 backdrop-blur sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
-        {/* mobile: เปิด drawer */}
+        {/* mobile: open the drawer */}
         <ActionIcon
           variant="subtle"
           color="gray"
           size="lg"
           className="lg:hidden"
           onClick={onOpenMobile}
-          aria-label="เปิดเมนู"
+          aria-label="Open menu"
         >
           <Menu size={20} />
         </ActionIcon>
-        {/* desktop: ย่อ/ขยาย sidebar */}
+        {/* desktop: collapse / expand the sidebar */}
         <ActionIcon
           variant="subtle"
           color="gray"
           size="lg"
           className="hidden lg:inline-flex"
           onClick={onToggleCollapse}
-          aria-label={collapsed ? "ขยายเมนู" : "ย่อเมนู"}
+          aria-label={collapsed ? "Expand menu" : "Collapse menu"}
         >
           {collapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
         </ActionIcon>
@@ -59,12 +59,12 @@ export default function Header({ collapsed, onToggleCollapse, onOpenMobile }: Pr
       <div className="flex shrink-0 items-center gap-3 text-sm">
         <span className="hidden text-default-500 sm:inline">{user?.username}</span>
         {user && (
-          <Badge variant="light" color="orange" tt="none" aria-label="บทบาท">
+          <Badge variant="light" color="orange" tt="none" aria-label="Role">
             {ROLE_LABEL[user.role]}
           </Badge>
         )}
-        <Tooltip label="ออกจากระบบ">
-          <ActionIcon variant="subtle" color="gray" size="lg" onClick={logout} aria-label="ออกจากระบบ">
+        <Tooltip label="Sign out">
+          <ActionIcon variant="subtle" color="gray" size="lg" onClick={logout} aria-label="Sign out">
             <LogOut size={18} />
           </ActionIcon>
         </Tooltip>

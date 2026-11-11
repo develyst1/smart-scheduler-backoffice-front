@@ -40,7 +40,7 @@ export function toAdmitInput(f: AdmitForm): AdmitLoginInput {
 }
 
 /**
- * Where a refusal belongs: 404 FO_USER_NOT_FOUND and 409 ALREADY_ADMITTED are the username field; a 400 whose `error.details.field` names a form field is that field's error (the server's own sentence);
+ * Where a refusal belongs: 404 (the username is not in the front office) and 409 ALREADY_ADMITTED are the username field (matched on the HTTP status, not on the code); a 400 whose `error.details.field` names a form field is that field's error (the server's own sentence);
  * anything else is `rest` (shown once in the dialog). `needsPerson` is true when the 400 is about `teacherId`: the screen then shows the Person picker.
  */
 export function fieldErrorsFromServer(error: unknown): { fields: FieldErrors; rest: string | null; needsPerson: boolean } {
@@ -60,10 +60,13 @@ export const canDeactivate = (row: LoginUser, me: string | null): boolean => row
 /** A deactivated login can be brought back. */
 export const canReactivate = (row: LoginUser): boolean => !row.active;
 
-/** The person a coach login is linked to, by name (the people list has no pay); the id when the person is not in the list; "—" for a login with no person. */
+/**
+ * The person a coach login is linked to, by name: the name the login row itself carries (`teacherName`, when the back end sends one), else the people list's (it has no pay, but it lists only teachers with an
+ * ACTIVE salary profile, so a coach without one is not in it); the id as the last resort; "—" for a login with no person.
+ */
 export function personName(row: LoginUser, people: readonly EntryPerson[]): string {
   if (!row.teacherId) return "—";
-  return people.find((p) => p.teacherId === row.teacherId)?.name ?? row.teacherId;
+  return row.teacherName?.trim() || people.find((p) => p.teacherId === row.teacherId)?.name || row.teacherId;
 }
 
 /** The success toasts (Thai, as the other screens). */

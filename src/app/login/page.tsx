@@ -19,7 +19,7 @@ export default function LoginPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password) {
-      setError("กรอกชื่อผู้ใช้และรหัสผ่าน");
+      setError("Enter a username and password");
       return;
     }
     setError(null);
@@ -34,7 +34,7 @@ export default function LoginPage() {
       router.replace(canOpen(user.role, next.split("?")[0]) ? next : homeFor(user.role));
     } catch (err) {
       clearToken();
-      setError(err instanceof ApiClientError ? err.message : "เข้าสู่ระบบไม่สำเร็จ");
+      setError(err instanceof ApiClientError ? err.message : "Sign in failed");
       setLoading(false);
     }
   };
@@ -47,21 +47,21 @@ export default function LoginPage() {
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-primary/70">SOM BALANCE · BACK OFFICE</p>
               <Title order={3} mt={4}>
-                เข้าสู่ระบบ
+                Sign in
               </Title>
               <Text c="dimmed" fz="sm" mt={2}>
-                ใช้ชื่อผู้ใช้และรหัสผ่านเดียวกับหน้าบ้าน
+                Use the same username and password as the front office.
               </Text>
             </div>
             <TextInput
-              label="ชื่อผู้ใช้"
+              label="Username"
               value={username}
               onChange={(e) => setUsername(e.currentTarget.value)}
               autoFocus
               required
             />
             <PasswordInput
-              label="รหัสผ่าน"
+              label="Password"
               value={password}
               onChange={(e) => setPassword(e.currentTarget.value)}
               required
@@ -78,7 +78,7 @@ export default function LoginPage() {
               fullWidth
               leftSection={<LogIn size={16} />}
             >
-              เข้าสู่ระบบ
+              Sign in
             </Button>
           </Stack>
         </form>

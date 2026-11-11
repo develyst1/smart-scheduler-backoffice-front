@@ -38,7 +38,7 @@ export default function ItemsContent() {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-primary/70">Catalog</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">รายการ (Items)</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Items</h1>
           <p className="mt-0.5 text-sm text-default-400">
             สินค้า · บริการ · รายรับ · รายจ่าย · ค่าใช้จ่ายคงที่ — ทุกอย่างเป็น item
           </p>

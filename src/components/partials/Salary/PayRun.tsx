@@ -14,17 +14,17 @@ import type { PayPeriod, RunResult, RunWarning } from "@/types/app/salary";
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => ({
   value: String(i + 1),
-  label: new Date(Date.UTC(2000, i, 15)).toLocaleDateString("th-TH-u-ca-gregory", { month: "long", timeZone: "Asia/Bangkok" }),
+  label: new Date(Date.UTC(2000, i, 15)).toLocaleDateString("en-GB", { month: "long", timeZone: "Asia/Bangkok" }),
 }));
 
 const CLASS_LABEL: Record<string, string> = { private: "Private", duo: "Duo", group: "Group", eca: "ECA", camp: "Camp" };
 
-/** "สลิปใหม่ 1 · อัปเดต 2 · รายการอัตโนมัติ: เพิ่ม 3 · แก้ 1 · ลบ 1" — only what the BE reported; no autoLines ⇒ it says nothing changed. */
+/** "Run done: 1 new slip · 2 updated · Auto lines: 3 added · 1 changed · 1 removed" — only what the BE reported; no autoLines ⇒ it says nothing changed. */
 function runSummary(r: RunResult): string {
   const auto = r.autoLines
-    ? `รายการอัตโนมัติ: เพิ่ม ${r.autoLines.inserted} · แก้ ${r.autoLines.updated} · ลบ ${r.autoLines.removed}`
-    : "รายการอัตโนมัติไม่เปลี่ยน";
-  return `Run แล้ว: สลิปใหม่ ${r.created} · อัปเดต ${r.refreshed} · ${auto}`;
+    ? `Auto lines: ${r.autoLines.inserted} added · ${r.autoLines.updated} changed · ${r.autoLines.removed} removed`
+    : "Auto lines unchanged";
+  return `Run done: ${r.created} new ${r.created === 1 ? "slip" : "slips"} · ${r.refreshed} updated · ${auto}`;
 }
 
 const byNewest =(a: PayPeriod, b: PayPeriod) => b.year * 12 + b.month - (a.year * 12 + a.month);
@@ -107,20 +107,20 @@ export default function PayRun() {
   const lockNow = () =>
     lock.mutate(periodId as string, {
       onSettled: () => confirm.close(),
-      onSuccess: () => notifications.show({ color: "green", message: "ล็อกงวดนี้แล้ว" }),
+      onSuccess: () => notifications.show({ color: "green", message: "Period locked" }),
     });
 
   const download = () => {
     if (!period) return;
     exportCsv.mutate(
       { periodId: period.id, filename: csvName(period) },
-      { onError: () => notifications.show({ color: "red", message: "ส่งออก CSV ไม่สำเร็จ" }) },
+      { onError: () => notifications.show({ color: "red", message: "CSV export failed" }) },
     );
   };
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="mb-5 text-2xl font-semibold tracking-tight text-foreground">Pay run · ภาพรวมรายเดือน</h1>
+      <h1 className="mb-5 text-2xl font-semibold tracking-tight text-foreground">Pay run · Monthly overview</h1>
 
       {periods.isLoading ? (
         <LoadingState />
@@ -131,18 +131,18 @@ export default function PayRun() {
           <Card mb="md">
             <Group align="flex-end" gap="md" wrap="wrap">
               <Select
-                label="งวดเงินเดือน"
-                placeholder={sorted.length ? "เลือกงวด" : "ยังไม่มีงวด — สร้างด้านขวา"}
+                label="Pay period"
+                placeholder={sorted.length ? "Choose a period" : "No periods yet — create one on the right"}
                 data={sorted.map((p) => ({
                   value: p.id,
-                  label: `${periodLabel(p)}${p.status === "locked" ? " · ล็อกแล้ว" : ""}`,
+                  label: `${periodLabel(p)}${p.status === "locked" ? " · Locked" : ""}`,
                 }))}
                 value={periodId}
                 onChange={(v) => v && goto(v)}
                 allowDeselect={false}
                 w={260}
               />
-              <Select label="เดือน" data={MONTHS} value={newMonth}
+              <Select label="Month" data={MONTHS} value={newMonth}
                 onChange={(v) => {
                   setNewMonth(v);
                   create.reset();
@@ -151,7 +151,7 @@ export default function PayRun() {
                 w={150}
               />
               <NumberInput
-                label="ปี (ค.ศ.)"
+                label="Year"
                 value={newYear}
                 onChange={(v) => {
                   setNewYear(v);
@@ -164,13 +164,13 @@ export default function PayRun() {
                 w={110}
               />
               <Button variant="default" leftSection={<Plus size={16} />} loading={create.isPending} onClick={createPeriod}>
-                สร้างงวด
+                Create period
               </Button>
             </Group>
             {create.isError && (
               <Alert color="red" variant="light" mt="sm" role="alert" data-create-error>
                 {isPeriodExists(create.error)
-                  ? `มีงวด ${periodLabel({ year: Number(newYear), month: Number(newMonth) })} อยู่แล้ว — เลือกจากรายการ “งวดเงินเดือน” ด้านบนได้เลย`
+                  ? `The ${periodLabel({ year: Number(newYear), month: Number(newMonth) })} period already exists — pick it from the “Pay period” list above.`
                   : errorMessage(create.error)}
               </Alert>
             )}
@@ -178,7 +178,7 @@ export default function PayRun() {
 
           {periodId === null ? (
             <Text c="dimmed" ta="center" py="xl">
-              ยังไม่มีงวดเงินเดือน — เลือกเดือนแล้วกด “สร้างงวด”
+              No pay periods yet — choose a month and press “Create period”.
             </Text>
           ) : overview.isLoading ? (
             <LoadingState />
@@ -196,13 +196,13 @@ export default function PayRun() {
                   </Group>
                   {rangeLabel(period) && (
                     <Text c="dimmed" fz="sm" mt={4} data-period-range>
-                      ช่วงจ่าย {rangeLabel(period)}
+                      Pay range {rangeLabel(period)}
                     </Text>
                   )}
                   <Text c="dimmed" fz="sm" mt={4} data-lock-at={period.lockAt}>
                     {locked
-                      ? `ล็อกเมื่อ ${formatInstant(period.lockedAt ?? period.lockAt)}`
-                      : `ล็อกอัตโนมัติ ${formatInstant(period.lockAt)} (12:00 วันสุดท้ายของเดือน)`}
+                      ? `Locked on ${formatInstant(period.lockedAt ?? period.lockAt)}`
+                      : `Locks automatically on ${formatInstant(period.lockAt)} (the last day of the month)`}
                   </Text>
                 </div>
                 <Group gap="xs" wrap="wrap">
@@ -240,11 +240,11 @@ export default function PayRun() {
               )}
               {lastHere && (
                 <Alert color="blue" variant="light" mb="sm" data-run-summary>
-                  {runSummary(lastHere).replace("Run แล้ว", "Run ล่าสุด")}
+                  {runSummary(lastHere).replace("Run done", "Last run")}
                 </Alert>
               )}
               {warningsByTeacher.length > 0 && (
-                <Alert color="yellow" variant="light" mb="sm" title="ยังไม่ได้ตั้งเรท Freelance — วันเหล่านี้ยังไม่ถูกคิดเงิน" data-run-warnings>
+                <Alert color="yellow" variant="light" mb="sm" title="Freelance rate not set — these days are not paid yet" data-run-warnings>
                   <ul className="m-0 list-disc pl-5">
                     {warningsByTeacher.map(([tid, ws]) => (
                       <li key={tid}>
@@ -254,29 +254,29 @@ export default function PayRun() {
                     ))}
                   </ul>
                   <Text fz="xs" mt={6}>
-                    ตั้งเรทของครูคนนั้นแล้วกด Run ใหม่ — ระบบจะเติมรายการให้เอง
+                    Set that coach's rate, then press Run again — the lines are added automatically.
                   </Text>
                 </Alert>
               )}
               {locked && (
                 <Alert color="green" variant="light" mb="sm">
-                  งวดนี้ล็อกแล้ว — แก้ไขสลิปและ Run ใหม่ไม่ได้ (ดูและ Export ได้)
+                  This period is locked — slips cannot be edited and it cannot be run again (you can still view and export).
                 </Alert>
               )}
 
               {slips.length === 0 ? (
                 <Text c="dimmed" ta="center" py="lg">
-                  ยังไม่มีสลิปในงวดนี้ — กด Run เพื่อสร้างสลิปให้โค้ช FT ทุกคน
+                  No slips in this period yet — press Run to create a slip for every FT coach.
                 </Text>
               ) : (
                 <Table.ScrollContainer minWidth={560}>
                   <Table highlightOnHover verticalSpacing="sm">
                     <Table.Thead>
                       <Table.Tr>
-                        <Table.Th>โค้ช</Table.Th>
-                        <Table.Th ta="right">เงินเดือนฐาน</Table.Th>
-                        <Table.Th ta="right">รวมสุทธิ</Table.Th>
-                        <Table.Th>สถานะ</Table.Th>
+                        <Table.Th>Coach</Table.Th>
+                        <Table.Th ta="right">Base salary</Table.Th>
+                        <Table.Th ta="right">Net total</Table.Th>
+                        <Table.Th>Status</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
@@ -304,7 +304,7 @@ export default function PayRun() {
                     </Table.Tbody>
                     <Table.Tfoot>
                       <Table.Tr>
-                        <Table.Th>รวม {slips.length} คน</Table.Th>
+                        <Table.Th>Total · {slips.length} {slips.length === 1 ? "coach" : "coaches"}</Table.Th>
                         <Table.Th ta="right" className="font-num" data-total-base>
                           {formatBaht(totals.base)}
                         </Table.Th>
@@ -322,9 +322,9 @@ export default function PayRun() {
         </>
       )}
 
-      <Modal opened={confirmOpen} onClose={confirm.close} title="ล็อกงวดนี้เลย?" centered>
+      <Modal opened={confirmOpen} onClose={confirm.close} title="Lock this period?" centered>
         <Text fz="sm">
-          เมื่อล็อกแล้ว จะเพิ่ม/ลบรายการ Other ± และ Run ใหม่ไม่ได้อีก{period ? ` (${periodLabel(period)})` : ""}
+          Once locked, Other ± lines can no longer be added or removed and the period cannot be run again{period ? ` (${periodLabel(period)})` : ""}
         </Text>
         {lock.isError && (
           <Alert color="red" variant="light" mt="sm" role="alert">
@@ -333,10 +333,10 @@ export default function PayRun() {
         )}
         <Group justify="flex-end" mt="lg">
           <Button variant="default" onClick={confirm.close}>
-            ยกเลิก
+            Cancel
           </Button>
           <Button color="red" loading={lock.isPending} onClick={lockNow} data-confirm-lock>
-            ล็อกเลย
+            Lock
           </Button>
         </Group>
       </Modal>

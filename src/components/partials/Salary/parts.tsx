@@ -8,7 +8,7 @@ import type { PeriodStatus, SlipStatus } from "@/types/app/salary";
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiClientError) return error.message;
   if (error instanceof Error) return error.message;
-  return "เกิดข้อผิดพลาด";
+  return "Something went wrong";
 }
 
 export function isLocked(error: unknown): boolean {
@@ -21,7 +21,7 @@ export function isPeriodExists(error: unknown): boolean {
 
 export function LoadingState() {
   return (
-    <Center h={200} role="status" aria-label="กำลังโหลด">
+    <Center h={200} role="status" aria-label="Loading">
       <Loader color="orange" />
     </Center>
   );
@@ -29,11 +29,11 @@ export function LoadingState() {
 
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   return (
-    <Alert color="red" variant="light" title="โหลดไม่สำเร็จ" role="alert">
+    <Alert color="red" variant="light" title="Could not load" role="alert">
       <div className="flex flex-wrap items-center gap-3">
         <span>{errorMessage(error)}</span>
         <Button size="xs" variant="default" onClick={onRetry}>
-          ลองอีกครั้ง
+          Try again
         </Button>
       </div>
     </Alert>
@@ -41,7 +41,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry: () => 
 }
 
 const SLIP_COLOR: Record<SlipStatus, string> = { draft: "gray", confirmed: "blue", locked: "green" };
-const SLIP_LABEL: Record<SlipStatus, string> = { draft: "ร่าง", confirmed: "ยืนยันแล้ว", locked: "ล็อกแล้ว" };
+const SLIP_LABEL: Record<SlipStatus, string> = { draft: "Draft", confirmed: "Confirmed", locked: "Locked" };
 
 export function SlipStatusBadge({ status }: { status: SlipStatus }) {
   return (
@@ -54,7 +54,7 @@ export function SlipStatusBadge({ status }: { status: SlipStatus }) {
 export function PeriodStatusBadge({ status }: { status: PeriodStatus }) {
   return (
     <Badge variant="light" color={status === "locked" ? "green" : "yellow"} tt="none" data-period-status={status}>
-      {status === "locked" ? "ล็อกแล้ว" : "เปิดอยู่"}
+      {status === "locked" ? "Locked" : "Open"}
     </Badge>
   );
 }

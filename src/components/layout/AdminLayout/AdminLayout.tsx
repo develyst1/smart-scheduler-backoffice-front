@@ -18,12 +18,12 @@ function NoAccess({ role, label }: { role: Role; label: string }) {
     <Card padding="xl" ta="center" data-no-access>
       <Stack align="center" gap="sm">
         <Lock size={28} />
-        <Title order={3}>บทบาทนี้ไม่เห็นหน้านี้</Title>
+        <Title order={3}>This role can't see this page</Title>
         <Text c="dimmed" maw={460}>
-          บทบาท {ROLE_LABEL[role]} ไม่มีสิทธิ์เปิดหน้า {label}
+          The {ROLE_LABEL[role]} role is not allowed to open {label}.
         </Text>
         <Button component={Link} href={homeFor(role)} variant="light">
-          กลับหน้าแรกของฉัน
+          Back to my home
         </Button>
       </Stack>
     </Card>
@@ -31,7 +31,7 @@ function NoAccess({ role, label }: { role: Role; label: string }) {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  // desktop: ย่อ sidebar เหลือไอคอน · mobile: เปิด drawer ทับจอ
+  // desktop: collapse the sidebar to icons · mobile: open a drawer over the page
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, ready } = useSession();
@@ -63,7 +63,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           onOpenMobile={() => setMobileOpen(true)}
         />
         <main className="flex-1 overflow-auto bg-[#0d0e10] p-4 sm:p-6">
-          {canOpen(user.role, pathname) ? children : <NoAccess role={user.role} label={ruleFor(pathname)?.label ?? "นี้"} />}
+          {canOpen(user.role, pathname) ? children : <NoAccess role={user.role} label={ruleFor(pathname)?.label ?? "this page"} />}
         </main>
       </div>
     </div>

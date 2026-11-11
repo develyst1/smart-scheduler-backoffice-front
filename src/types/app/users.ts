@@ -14,6 +14,8 @@ export interface LoginUser {
   active: boolean;
   /** ISO instant */
   createdAt?: string;
+  /** the linked teacher's display name, when the back end sends it (so the list does not depend on the salary people list); absent today */
+  teacherName?: string | null;
   /** true for a person admitted from the front office (the seeded CEO is not); the screen does not need it */
   admitted?: boolean;
 }

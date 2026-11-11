@@ -27,9 +27,9 @@ export default function Slip({ slipId }: { slipId: string }) {
 
   const submit = () => {
     const next: Partial<Record<Field, string>> = {};
-    if (!label.trim()) next.label = "ต้องระบุเหตุผล";
+    if (!label.trim()) next.label = "A reason is required";
     const satang = amount === "" ? null : bahtInputToSatang(amount);
-    if (satang === null || satang === 0) next.amount = "ใส่จำนวนเงิน (ติดลบได้) และต้องไม่เป็น 0";
+    if (satang === null || satang === 0) next.amount = "Enter an amount (negative allowed), not 0";
     setErrors(next);
     if (Object.keys(next).length > 0 || satang === null) return;
     add.mutate(
@@ -50,7 +50,7 @@ export default function Slip({ slipId }: { slipId: string }) {
   return (
     <div className="mx-auto max-w-3xl">
       <Button component={Link} href={backHref} variant="subtle" color="gray" leftSection={<ArrowLeft size={16} />} mb="sm">
-        กลับไป Pay run
+        Back to Pay run
       </Button>
 
       {slip.isLoading ? (
@@ -62,11 +62,11 @@ export default function Slip({ slipId }: { slipId: string }) {
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                สลิป · {data.teacherName || data.teacherId}
+                Slip · {data.teacherName || data.teacherId}
               </h1>
               <Text c="dimmed" fz="sm" mt={2}>
                 {periodLabel(data.period)}
-                {rangeLabel(data.period) ? ` · ช่วงจ่าย ${rangeLabel(data.period)}` : ""}
+                {rangeLabel(data.period) ? ` · Pay range ${rangeLabel(data.period)}` : ""}
               </Text>
             </div>
             <Group gap="xs">
@@ -77,7 +77,7 @@ export default function Slip({ slipId }: { slipId: string }) {
 
           {locked && (
             <Alert color="green" variant="light" mb="md" data-slip-locked>
-              สลิปนี้ล็อกแล้ว{data.period.lockedAt ? ` เมื่อ ${formatInstant(data.period.lockedAt)}` : ""} — ดูได้อย่างเดียว
+              This slip is locked{data.period.lockedAt ? ` on ${formatInstant(data.period.lockedAt)}` : ""} — view only
             </Alert>
           )}
 
@@ -93,12 +93,12 @@ export default function Slip({ slipId }: { slipId: string }) {
           {!locked && (
             <Card>
               <Text fw={600} mb="sm">
-                เพิ่มรายการ Other ±
+                Add an Other ± line
               </Text>
               <Group align="flex-start" gap="md" wrap="wrap">
                 <TextInput
-                  label="เหตุผล"
-                  placeholder="เช่น โบนัสพิเศษ / หักมาสาย"
+                  label="Reason"
+                  placeholder="e.g. special bonus / late deduction"
                   value={label}
                   onChange={(e) => setLabel(e.currentTarget.value)}
                   error={errors.label}
@@ -106,8 +106,8 @@ export default function Slip({ slipId }: { slipId: string }) {
                   className="min-w-[220px] flex-1"
                 />
                 <NumberInput
-                  label="จำนวนเงิน (บาท)"
-                  description="ติดลบ = หักเงิน"
+                  label="Amount (baht)"
+                  description="Negative = a deduction"
                   placeholder="0.00"
                   value={amount}
                   onChange={setAmount}
@@ -118,12 +118,12 @@ export default function Slip({ slipId }: { slipId: string }) {
                   w={190}
                 />
                 <Button mt={25} leftSection={<Plus size={16} />} loading={add.isPending} onClick={submit}>
-                  เพิ่ม
+                  Add
                 </Button>
               </Group>
               {add.isError && (
                 <Alert color="red" variant="light" mt="sm" role="alert">
-                  {isLocked(add.error) ? "งวดนี้ถูกล็อกแล้ว — เพิ่มรายการไม่ได้" : errorMessage(add.error)}
+                  {isLocked(add.error) ? "This period is locked — lines cannot be added" : errorMessage(add.error)}
                 </Alert>
               )}
             </Card>

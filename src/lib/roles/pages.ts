@@ -10,6 +10,8 @@ export interface PageRule {
   label: string;
   group: Group;
   roles: Role[];
+  /** 🔻 TASK-933: the roles whose MENU lists this page, when that is narrower than `roles` (a page a role may open — by address — but is not offered). Default: `roles`. */
+  menuRoles?: Role[];
   /** pay or revenue: an admin never opens it (R0.2) */
   money?: true;
   /** in the sidebar menu (the rest are guarded but not listed — the old ops screens) */
@@ -18,10 +20,10 @@ export interface PageRule {
 }
 
 export const PAGE_RULES: PageRule[] = [
-  { href: "/dashboard", label: "งบกำไร–ขาดทุน", group: "REPORTS", roles: ["ceo"], money: true, menu: true, icon: LayoutDashboard },
-  { href: "/revenue", label: "รายได้แยกตามกิจกรรม", group: "REVENUE", roles: ["ceo"], money: true, menu: true, icon: PieChart },
-  { href: "/items", label: "รายการ (Items)", group: "ITEMS", roles: ["ceo", "admin"], menu: true, icon: Boxes },
-  { href: "/tags", label: "แท็ก", group: "ITEMS", roles: ["ceo", "admin"], menu: true, icon: Tags },
+  { href: "/dashboard", label: "P&L", group: "REPORTS", roles: ["ceo"], money: true, menu: true, icon: LayoutDashboard },
+  { href: "/revenue", label: "Revenue by activity", group: "REVENUE", roles: ["ceo"], money: true, menu: true, icon: PieChart },
+  { href: "/items", label: "Items", group: "ITEMS", roles: ["ceo", "admin"], menu: true, icon: Boxes },
+  { href: "/tags", label: "Tags", group: "ITEMS", roles: ["ceo", "admin"], menu: true, icon: Tags },
   // 🔻 TASK-907 (Team B, lent to Team A's Stock block): Product — the list, category tabs, add / edit (CEO + Admin). One row, first in STOCK (the final UI's order: Product, …, STOCK OUT).
   { href: "/stock/products", label: "Product", group: "STOCK", roles: ["ceo", "admin"], menu: true, icon: Package },
   // 🔻 TASK-912 (Team B, lent to Team A's Stock block): STOCK IN, a manual receive — product + quantity + date, no cost / price (CEO + Admin). One row.
@@ -47,18 +49,19 @@ export const PAGE_RULES: PageRule[] = [
   { href: "/salary/person", label: "Employee Profile", group: "SALARY", roles: ["ceo", "admin"], icon: UserRound },
   { href: "/salary/settings", label: "Payment Setting", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: Settings },
   // TASK-866 / final-ui order (Employee · Payment Setting · Monthly Payment · … · Daily): an explicit pay-run row, above Daily, so the CEO's SALARY menu matches the final UI.
-  { href: "/salary/payrun", label: "Pay run (เงินเดือน)", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: Banknote },
+  { href: "/salary/payrun", label: "Pay run", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: Banknote },
   { href: "/salary/daily", label: "Daily Training Report", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: CalendarDays },
   // TASK-923 (R1.8): the month-end Salary Report (Teaching · Pay + Excel). CEO only; above the `/salary` row.
   { href: "/salary/reports", label: "Salary Report", group: "SALARY", roles: ["ceo"], money: true, menu: true, icon: BarChart3 },
   // TASK-882 (final-ui's registry): the coach's own slip and the admin-blind Entries. These MUST stay above the `/salary` row (first match wins).
   { href: "/salary/my-slip", label: "Payment Detail", group: "SALARY", roles: ["coach"], money: true, menu: true, icon: FileText },
-  { href: "/salary/entries", label: "Other Income", group: "SALARY", roles: ["admin"], menu: true, icon: Receipt },
-  { href: "/salary", label: "Pay run (เงินเดือน)", group: "SALARY", roles: ["ceo"], money: true, icon: Banknote }, // covers /salary/slip/[id] and the bare /salary redirect (TASK-866); the menu item is the /salary/payrun row above
-  { href: "/my-slip", label: "สลิปของฉัน", group: "SALARY", roles: ["coach"], money: true, icon: FileText }, // the Phase-1 placeholder: still guarded, no longer in the menu (TASK-882)
-  { href: "/payroll", label: "ครู / Payroll", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
-  { href: "/ftpt-salary", label: "เงินเดือน FT/PT", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
-  { href: "/freelance-budgets", label: "งบ Freelance", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
+  // 🔻 TASK-933 (D-150-1): Other Income is the ADMIN's menu item; the CEO may OPEN it (by address) and gets a pointer to the Pay run there, never the refusing form or the shell's «no access» card.
+  { href: "/salary/entries", label: "Other Income", group: "SALARY", roles: ["admin", "ceo"], menuRoles: ["admin"], menu: true, icon: Receipt },
+  { href: "/salary", label: "Pay run", group: "SALARY", roles: ["ceo"], money: true, icon: Banknote }, // covers /salary/slip/[id] and the bare /salary redirect (TASK-866); the menu item is the /salary/payrun row above
+  { href: "/my-slip", label: "My slip", group: "SALARY", roles: ["coach"], money: true, icon: FileText }, // the Phase-1 placeholder: still guarded, no longer in the menu (TASK-882)
+  { href: "/payroll", label: "Payroll", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
+  { href: "/ftpt-salary", label: "FT/PT salary", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
+  { href: "/freelance-budgets", label: "Freelance budget", group: "SALARY", roles: ["ceo"], money: true, icon: BarChart3 },
   // 🔻 TASK-925 (SPEC-103 §1): All Report — CEO + Admin. No `money` flag on purpose: the money rule lives in the API (a money key is ABSENT for an admin), so the screens show none.
   { href: "/reports", label: "All Report", group: "REPORTS", roles: ["ceo", "admin"], menu: true, icon: BarChart3 },
   { href: "/wallet", label: "Wallet", group: "ITEMS", roles: ["ceo", "admin"], icon: Boxes },
@@ -87,7 +90,7 @@ export interface MenuGroup {
 export const menuFor = (role: Role): MenuGroup[] => {
   const out: MenuGroup[] = [];
   for (const p of PAGE_RULES) {
-    if (!p.menu || !p.roles.includes(role)) continue;
+    if (!p.menu || !(p.menuRoles ?? p.roles).includes(role)) continue;
     const g = out.find((x) => x.group === p.group);
     if (g) g.items.push(p);
     else out.push({ group: p.group, items: [p] });

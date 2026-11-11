@@ -30,7 +30,7 @@ export function formatSigned(satang: number | null): string {
 }
 
 const TZ = "Asia/Bangkok";
-const LOCALE = "th-TH-u-ca-gregory"; // Thai words, Gregorian year (the team writes 2026, not 2569)
+const LOCALE = "en-GB"; // English month names, day-month-year order (the back office is English)
 
 export function periodLabel(p: Pick<PayPeriod, "year" | "month">): string {
   return new Date(Date.UTC(p.year, p.month - 1, 15)).toLocaleDateString(LOCALE, { month: "long", year: "numeric", timeZone: TZ });
@@ -67,18 +67,21 @@ export function currentYearMonth(now: Date = new Date()): { year: number; month:
   return { year: Number(y), month: Number(m) };
 }
 
-/** "2026-10-16" → "16 ต.ค." ; unreadable → the input as given. */
+/** The English short month is «Sep», not ICU's «Sept» (en-GB), so every short month has three letters. */
+const sep = (s: string): string => s.replace(/\bSept\b/g, "Sep");
+
+/** "2026-10-16" → "16 Oct" ; unreadable → the input as given. */
 export function shortDate(ymd: string): string {
   const d = new Date(`${ymd}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) ? ymd : d.toLocaleDateString(LOCALE, { day: "numeric", month: "short", timeZone: "UTC" });
+  return Number.isNaN(d.getTime()) ? ymd : sep(d.toLocaleDateString(LOCALE, { day: "numeric", month: "short", timeZone: "UTC" }));
 }
 
-/** "31 ต.ค. – 29 พ.ย. 2026" from the period's inclusive YYYY-MM-DD range; "" when the BE sent none. */
+/** "31 Oct – 29 Nov 2026" from the period's inclusive YYYY-MM-DD range; "" when the BE sent none. */
 export function rangeLabel(p: Pick<PayPeriod, "periodStart" | "periodEnd">): string {
   const day = (s: string, withYear: boolean) => {
     const d = new Date(`${s}T00:00:00Z`);
     if (Number.isNaN(d.getTime())) return null;
-    return d.toLocaleDateString(LOCALE, { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" });
+    return sep(d.toLocaleDateString(LOCALE, { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" }));
   };
   const a = p.periodStart ? day(p.periodStart, false) : null;
   const b = p.periodEnd ? day(p.periodEnd, true) : null;
@@ -89,15 +92,17 @@ export function formatInstant(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString(LOCALE, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: TZ,
-  });
+  return sep(
+    d.toLocaleString(LOCALE, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: TZ,
+    }),
+  );
 }
 
 export function csvName(p: Pick<PayPeriod, "year" | "month">): string {

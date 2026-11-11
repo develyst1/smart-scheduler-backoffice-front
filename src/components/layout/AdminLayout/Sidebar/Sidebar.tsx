@@ -9,9 +9,9 @@ import type { Role } from "@/types/app/roles";
 
 interface Props {
   role: Role;
-  /** desktop: ย่อเหลือไอคอน */
+  /** desktop: collapsed to icons */
   collapsed: boolean;
-  /** mobile: เปิด drawer */
+  /** mobile: drawer open */
   mobileOpen: boolean;
   onCloseMobile: () => void;
 }
@@ -94,7 +94,7 @@ function NavList({
 export default function Sidebar({ role, collapsed, mobileOpen, onCloseMobile }: Props) {
   return (
     <>
-      {/* ── Desktop: sidebar ในเลย์เอาต์ ย่อ/ขยายได้ (ซ่อนบนจอเล็ก) ── */}
+      {/* ── Desktop: the sidebar in the layout, collapsible (hidden on small screens) ── */}
       <aside
         className={`hidden h-full shrink-0 flex-col border-r border-default-200 bg-content1 transition-[width] duration-200 lg:flex ${
           collapsed ? "w-16" : "w-64"
@@ -103,11 +103,11 @@ export default function Sidebar({ role, collapsed, mobileOpen, onCloseMobile }: 
         <Brand collapsed={collapsed} />
         <NavList role={role} collapsed={collapsed} />
         {!collapsed && (
-          <div className="px-5 py-4 text-xs text-default-400">v0.1 · ทีมงานหลังบ้าน</div>
+          <div className="px-5 py-4 text-xs text-default-400">v0.1 · Back office team</div>
         )}
       </aside>
 
-      {/* ── Mobile: drawer ทับจอ + backdrop (แสดงเฉพาะจอเล็ก) ── */}
+      {/* ── Mobile: a drawer over the page + a backdrop (small screens only) ── */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -118,7 +118,7 @@ export default function Sidebar({ role, collapsed, mobileOpen, onCloseMobile }: 
           <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r border-default-200 bg-content1 shadow-xl">
             <Brand collapsed={false} />
             <NavList role={role} collapsed={false} onNavigate={onCloseMobile} />
-            <div className="px-5 py-4 text-xs text-default-400">v0.1 · ทีมงานหลังบ้าน</div>
+            <div className="px-5 py-4 text-xs text-default-400">v0.1 · Back office team</div>
           </aside>
         </div>
       )}
