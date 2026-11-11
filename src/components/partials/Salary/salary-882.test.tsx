@@ -76,7 +76,7 @@ describe("My slip", () => {
   test("an empty month ({ slip: null }) shows the empty state, not a slip", () => {
     const html = ui(<MySlipBody data={{ slip: null }} />);
     expect(html).toContain("data-my-slip-empty");
-    expect(html).toContain("ยังไม่มีสลิปในงวดนี้");
+    expect(html).toContain("No slip for this period yet"); // 🔻 TASK-933: English (D-150-1)
     expect(html).not.toContain("รวมสุทธิ");
   });
 });

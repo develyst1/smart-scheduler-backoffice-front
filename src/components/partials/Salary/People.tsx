@@ -134,7 +134,7 @@ export function PeopleBody({
             <Button
               onClick={() => {
                 setOpen(false);
-                notifyOk(`เพิ่มพนักงานแล้ว: ${name || "—"} — ไปตั้งเรทและเงินเดือนในหน้าโปรไฟล์ต่อ`);
+                notifyOk(`Employee added: ${name || "—"} — set their rate and salary on the profile page next`);
               }}
             >
               Add employee

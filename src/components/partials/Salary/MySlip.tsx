@@ -23,14 +23,14 @@ export function canConfirmSlip(data: MySlipResponse | undefined, now: number = D
 }
 
 /** The final UI's toast after a confirm, with the total from the 200 body. */
-export const confirmedToast = (totalSatang: number): string => `ยืนยันสลิปรอบนี้แล้ว: ${formatBaht(totalSatang)} ฿ — หลังจากนี้แก้ไม่ได้`;
+export const confirmedToast = (totalSatang: number): string => `Slip confirmed: ${formatBaht(totalSatang)} ฿ — it can no longer be edited`;
 
 /** The body for one month's answer: the slip, or the empty state when there is none (`{ slip: null }`). Pure: the page feeds it. */
 export function MySlipBody({ data }: { data: MySlipResponse }) {
   if ("slip" in data) {
     return (
       <Text c="dimmed" ta="center" py="xl" data-my-slip-empty>
-        ยังไม่มีสลิปในงวดนี้
+        No slip for this period yet
       </Text>
     );
   }

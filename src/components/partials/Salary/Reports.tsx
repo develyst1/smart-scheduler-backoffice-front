@@ -40,7 +40,7 @@ export default function Reports() {
   let body: React.ReactNode = null;
   if (periods.isLoading) body = <LoadingState />;
   else if (periods.error) body = <ErrorState error={periods.error} onRetry={() => periods.refetch()} />;
-  else if (!period) body = <Alert color="gray" variant="light">ยังไม่มี Pay run ของเดือนนี้</Alert>;
+  else if (!period) body = <Alert color="gray" variant="light">No pay run for this month yet</Alert>;
   else if (q.isLoading || names.isLoading) body = <LoadingState />;
   else if (q.error) body = <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   else if (tab === "teaching" && teaching.data) body = <TeachingTable report={teaching.data} names={names.data ?? {}} />;

@@ -78,7 +78,7 @@ describe("the request (confirmMySlip)", () => {
 
 describe("the toast and the refusals", () => {
   test("the final UI's sentence with the total from the 200 body", () => {
-    expect(confirmedToast(2_570_000)).toBe("ยืนยันสลิปรอบนี้แล้ว: 25,700.00 ฿ — หลังจากนี้แก้ไม่ได้");
+    expect(confirmedToast(2_570_000)).toBe("Slip confirmed: 25,700.00 ฿ — it can no longer be edited");
   });
   const REFUSALS: [number, string, string][] = [
     [409, "LOCKED", "งวดนี้ล็อกแล้ว ยืนยันไม่ได้"],

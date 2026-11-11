@@ -131,7 +131,7 @@ export function PersonBody({
               <Button
                 loading={saving}
                 disabled={baseInvalid || flPlan.invalid.length > 0}
-                onClick={() => (editable ? onSave?.({ baseSatang, vehicle, meritEligible: merit }, flPlan.changes) : notifyOk("บันทึกโปรไฟล์แล้ว"))}
+                onClick={() => (editable ? onSave?.({ baseSatang, vehicle, meritEligible: merit }, flPlan.changes) : notifyOk("Profile saved"))}
               >
                 Save profile
               </Button>
@@ -220,7 +220,7 @@ export default function Person() {
                     // TASK-899: then one PUT per changed rate; the card is re-read after, so it shows the truth even on a partial failure
                     const results = flChanges.length ? await saveFl.mutateAsync({ teacherId: p.teacherId as string, changes: flChanges }) : [];
                     const failed = results.filter((r) => !r.ok);
-                    if (!failed.length) notifyOk("บันทึกโปรไฟล์แล้ว");
+                    if (!failed.length) notifyOk("Profile saved");
                     for (const f of failed) notifications.show({ color: "red", message: `${FL_CLASSES.find((c) => c.classType === f.classType)?.label}: ${f.message}` });
                   },
                   // the server's own sentence (e.g. a 400), unchanged

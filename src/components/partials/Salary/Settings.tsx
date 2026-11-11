@@ -42,7 +42,7 @@ export function SettingsBody({
         title="Payment Setting"
         actions={
           // REQ-5010: «Add school» moved out of here, into the School Distance box
-          live ? undefined : <Button onClick={() => notifyOk(`บันทึกการตั้งค่าแล้ว — ใช้กับรอบ ${fmtDate("2026-09-30")}–${fmtDate("2026-10-30")} เป็นต้นไป`)}>Save settings</Button>
+          live ? undefined : <Button onClick={() => notifyOk(`Settings saved — applies from the pay period ${fmtDate("2026-09-30")}–${fmtDate("2026-10-30")} onward`)}>Save settings</Button>
         }
       />
       <Stack gap="md">
@@ -210,7 +210,7 @@ export function SettingsBody({
                 if (!n || groups.some((g) => g.group === n)) return;
                 setGroups((g) => [...g, { group: n, rate: newRate.trim() || "—", ft: "Share Equally", pt: "Own", fl: "Own", staff: "—" }]);
                 setGroupOpen(false);
-                notifyOk(`เพิ่มกลุ่มค่าคอม “${n}” ${newRate} แล้ว — ผูกสินค้าเข้ากลุ่มได้ที่หน้า Product`);
+                notifyOk(`Commission group “${n}” ${newRate} added — link products to it on the Product page`);
               }}
             >
               Add group
@@ -241,7 +241,7 @@ export function SettingsBody({
                   }
                 } else setSchools((s) => [...s, { name: n, km: k }]);
                 setSchoolOpen(false);
-                notifyOk(`เพิ่มโรงเรียน ${n} (${k} กม.) แล้ว — ใช้คิดค่าน้ำมันตอนแอดมินบันทึกเที่ยว`);
+                notifyOk(`School ${n} (${k} km) added — used to work out the fuel cost when an admin records a trip`);
               }}
             >
               Add school
@@ -267,7 +267,7 @@ export function SettingsBody({
                     return void notifications.show({ color: "red", message: errorMessage(e) });
                   }
                 } else setSchools((s) => s.map((x) => (x.name === editing.name ? { ...x, km: k } : x)));
-                notifyOk(`แก้ระยะทาง ${editing.name} เป็น ${k} กม. แล้ว`);
+                notifyOk(`Distance of ${editing.name} changed to ${k} km`);
                 setEditing(null);
               }}
             >

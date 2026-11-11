@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, Card, Group, NumberInput, Select, SimpleGrid, Stack, Table, TextInput, Title } from "@mantine/core";
+import Link from "next/link";
+import { Button, Card, Group, NumberInput, Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+import { useRole } from "@/context/RoleContext";
 import { notifications } from "@mantine/notifications";
 import { useCreateEntry, useCreateTrip, useEntryPeople, useTransportSchools } from "./hooks";
 import { tripWord } from "./entries-logic";
@@ -105,7 +107,34 @@ const card = (title: string, body: React.ReactNode, action: React.ReactNode) => 
 );
 
 /** SALARY › Other Income. R0.3: an admin sees back only the line they typed — never a slip total, the base or a rate (SPEC-102 §5-E2). */
+/**
+ * TASK-933 (D-150-1, Porter 21:24): the CEO is never shown a form that refuses. Other Income (the admin's blind entry form) is not in the CEO's menu, but a typed address can bring her here:
+ * she gets one pointer to where she adds lines herself — the coach's slip on the Pay run. PENDING (Porter): the sentence and «Open Pay run».
+ */
+export function EntriesCeoPointer() {
+  return (
+    <div className="mx-auto max-w-3xl" data-entries-ceo-pointer>
+      <h1 className="mb-5 text-2xl font-semibold tracking-tight text-foreground">Other Income</h1>
+      <Card padding="lg">
+        <Stack gap="sm" align="flex-start">
+          <Text>Add income lines for a coach on the Payment Detail (slip)</Text>
+          <Button component={Link} href="/salary/payrun" variant="light">
+            Open Pay run
+          </Button>
+        </Stack>
+      </Card>
+    </div>
+  );
+}
+
+/** Other Income: the admin's entry form; the CEO gets the pointer instead (no request is made for her). */
 export default function Entries() {
+  const role = useRole();
+  if (role === "ceo") return <EntriesCeoPointer />;
+  return <EntriesForm />;
+}
+
+function EntriesForm() {
   const [ym, setYm] = useState(currentYearMonth);
   const people = useEntryPeople();
   const create = useCreateEntry();
@@ -144,8 +173,8 @@ export default function Entries() {
             color: "green",
             message:
               kind === "merit"
-                ? `บันทึกแล้ว: Merit ของ ${nameOf(teacherId)} ${formatBaht(amountSatang)} ฿ → เพิ่มในสลิปรอบ ${period}`
-                : `บันทึกแล้ว: รายการเพิ่ม/หัก ${formatSigned(amountSatang)} ฿ ของ ${nameOf(teacherId)} เหตุผล “${reason}” → เพิ่มในสลิปรอบ ${period}`,
+                ? `Saved: Merit for ${nameOf(teacherId)} ${formatBaht(amountSatang)} ฿ → added to the slip of pay period ${period}`
+                : `Saved: add / deduct ${formatSigned(amountSatang)} ฿ for ${nameOf(teacherId)}, reason “${reason}” → added to the slip of pay period ${period}`,
           });
           if (kind === "merit") setMeritAmount("");
           else {
@@ -176,7 +205,7 @@ export default function Entries() {
     if (!otherReason.trim()) next.otherReason = "Required";
     setErrors(next);
     if (!otherReason.trim()) {
-      notifications.show({ color: "orange", message: "ต้องใส่เหตุผลก่อนบันทึกรายการเพิ่ม/หัก" });
+      notifications.show({ color: "orange", message: "A reason is required before saving an add / deduct line" });
     }
     if (Object.keys(next).length || !otherPerson || s === null) return;
     send("other", otherPerson, s, otherReason.trim());
@@ -203,7 +232,7 @@ export default function Entries() {
           setTripRows((r) => [{ person: nameOf(tripPerson), trip }, ...r]);
           notifications.show({
             color: "green",
-            message: `บันทึกแล้ว: ค่าน้ำมัน 1 เที่ยว ${nameOf(tripPerson)} ${fmtDate(tripDate)} ${trip.schoolName || schoolName} ${tripWord(roundTrip)} → เพิ่มในสลิปรอบ ${period}`,
+            message: `Saved: fuel cost for 1 trip, ${nameOf(tripPerson)} ${fmtDate(tripDate)} ${trip.schoolName || schoolName} ${tripWord(roundTrip)} → added to the slip of pay period ${period}`,
           });
         },
         // the server's own sentence (409 locked · 400 inactive school / bad input · 404)
